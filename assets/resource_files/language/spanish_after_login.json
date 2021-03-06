@@ -1,0 +1,10 @@
+{
+  'card_subs': {
+    'title': "Suscripción: ",
+    'ticket_audio': "Nuevo mensaje de audio",
+    'ticket_image': "Imagen recibida",
+    'ticket_document': "Documento recibido",
+    'ticket_location': "Ubicacion recibido"
+  }
+
+}

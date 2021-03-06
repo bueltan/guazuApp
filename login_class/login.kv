@@ -1,0 +1,108 @@
+#:set primary_color (94/255, 53/255, 177/255, 1)
+<ReplicableTextField@CommonTextField>:
+
+<CommonTextField@MDTextField>:
+    size_hint: 0.75, 0.1
+    multiline: False
+    required: True
+    max_text_length: 32
+    helper_text: "Este campo es requerido"
+    line_color_normal: primary_color
+    color_mode: 'custom'
+    line_color_focus: primary_color
+
+<Login>:
+    user: user_input
+    password: password_input
+    keepOpen: keepOpen
+    ck_keepOpen:ck_keepOpen
+    newPass:newPass
+    BoxLayout:
+        orientation: 'vertical'
+        rows: 2
+        size: root.size
+        padding: "10dp"
+        AnchorLayout:
+            anchor_x:'center'
+            anchor_y:'center'
+            size_hint : (1, .20)
+            Image:
+                id: avatar
+                size: self.texture_size
+                source: "assets/guazuapp50.png"
+                size_hint_max_y: 150
+                size_hint_min_x: 200
+
+
+        AnchorLayout:
+            anchor_x:'center'
+            anchor_y:'center'
+            size_hint : (1, .80)
+            BoxLayout:
+                orientation:'vertical'
+                size_hint_y: .9
+                size_hint_x: .95
+                size_hint_min_x: 250
+                size_hint_min_y: 450
+                size_hint_max_x: 525
+                size_hint_max_y: 500
+                spacing: 30
+                MDLabel:
+                    size_hint_y:.12
+                    text:'Ingresar'
+                    font_style:"H5"
+                    halign:'center'
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primary_color
+                MDCard:
+                    elevation: 0
+                    BoxLayout:
+                        orientation:'vertical'
+                        padding: 10
+                        spacing: 30
+
+                        ReplicableTextField:
+                            size_hint_x: 1
+                            id: user_input
+                            write_tab: False
+                            hint_text: "ID Nombre o Email"
+                            helper_text_mode: "on_error"
+                        ReplicableTextField:
+                            size_hint_x: 1
+                            id: password_input
+                            write_tab: False
+                            hint_text: "Contraseña"
+                            helper_text_mode: "on_error"
+                            password:True
+
+                        BoxLayout:
+                            size_hint_y:.12
+                            orientation: 'horizontal'
+                            rows: 2
+                            MDCheckbox:
+                                id: ck_keepOpen
+                                pos_hint: {'center_x': 0, 'center_y': 1}
+
+                                size_hint: None, None
+                                size: "28dp", "28dp"
+                                active: False
+                            MDTextButton:
+                                pos_hint: {'center_x': 0, 'center_y': 1}
+                                id: keepOpen
+                                text: "Auto login"
+                        MDRaisedButton:
+                            text: 'In'
+                            size_hint_x : 1
+                            on_press: root.go_in()
+                        MDTextButton:
+                            id: newPass
+                            text: "¿ Olvidaste tu contraseña ?"
+                        MDTextButton:
+                            pos_hint: {'center_x': .5, 'center_y': .5}
+                            text: 'Registrarse'
+                            on_release:root.go_to_register()
+
+
+
+
+
