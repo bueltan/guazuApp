@@ -1,0 +1,24 @@
+<mainNavigation>:
+    screenManager : screenManager
+    container:container
+    new_tk: new_tk
+    ScreenManager:
+        id: screenManager
+        Screen:
+            name: 'subscriptions'
+            Carousel:
+                id: container
+
+            MDFloatingActionButton:
+                id: new_tk
+                pos_hint: {'center_x': .5, 'center_y': .1}
+                icon: "message-bulleted"
+                theme_text_color: "Custom"
+                md_bg_color: app.theme_cls.primary_color
+                on_release:root.show_screen_contacts()
+
+
+
+
+
+

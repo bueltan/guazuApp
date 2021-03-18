@@ -7,7 +7,7 @@ class ModelMessages(Base):
 
     __tablename__ = 'Messages'
     id = Column('id', String(80), primary_key=True, doc="Id of the MessageSent.")
-    ticketsId = Column('ticketsId', ForeignKey('Tickets.id'), doc="Id of the tickets")
+    tickets_id = Column('tickets_id', ForeignKey('Tickets.id'), doc="Id of the Tickets")
     type = Column('type', String(15), nullable=False, doc="Type of the message.")
     text = Column('text', String(6000), doc="Text of the massage max len 6000")
     fromMe = Column('fromMe', Boolean, doc="is the message from me.")

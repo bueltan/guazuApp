@@ -1,16 +1,17 @@
-import requests
-from kivymd.uix.snackbar import Snackbar
+from database import base
 
-server_http = 'http://entity.ar:5000/' #'http://192.168.0.22:5000/'
-base_url_http = server_http + 'graphql'#
-base_url_ws = 'ws://entity.ar:5000/subscriptions'#'ws://192.168.0.22:5000/subscriptions'
-headers = {'content-type': 'application/json'}
 
-def send_payload(payload):
-    try:
-        print(payload)
-        response = requests.post(base_url_http, headers=headers, data=payload)
-        json = response.json()
-        return json
-    except:
-        return False
+class variables(object):
+    __doc__ = "class variables"
+
+    server_http = 'http://entity.ar:5000/'  # 'http://192.168.0.22:5000/'
+    base_url_http = server_http + 'graphql'  #
+    base_url_ws = 'ws://entity.ar:5000/subscriptions'  # 'ws://192.168.0.22:5000/subscriptions'
+    headers = {'content-type': 'application/json'}
+
+
+
+
+
+
+

@@ -12,8 +12,8 @@
     line_color_focus: primary_color
 
 <Login>:
-    user: user_input
-    password: password_input
+    user_input: user_input
+    password_input: password_input
     keepOpen: keepOpen
     ck_keepOpen:ck_keepOpen
     newPass:newPass
@@ -21,23 +21,19 @@
         orientation: 'vertical'
         rows: 2
         size: root.size
-        padding: "10dp"
+        padding: "20dp"
         AnchorLayout:
             anchor_x:'center'
-            anchor_y:'center'
-            size_hint : (1, .20)
+            anchor_y:'bottom'
+            size_hint : (1, .15)
             Image:
                 id: avatar
                 size: self.texture_size
                 source: "assets/guazuapp50.png"
-                size_hint_max_y: 150
-                size_hint_min_x: 200
-
-
         AnchorLayout:
             anchor_x:'center'
             anchor_y:'center'
-            size_hint : (1, .80)
+            size_hint : (1, .85)
             BoxLayout:
                 orientation:'vertical'
                 size_hint_y: .9
@@ -47,20 +43,20 @@
                 size_hint_max_x: 525
                 size_hint_max_y: 500
                 spacing: 30
-                MDLabel:
-                    size_hint_y:.12
-                    text:'Ingresar'
-                    font_style:"H5"
-                    halign:'center'
-                    theme_text_color: "Custom"
-                    text_color: app.theme_cls.primary_color
+
                 MDCard:
                     elevation: 0
                     BoxLayout:
                         orientation:'vertical'
                         padding: 10
                         spacing: 30
-
+                        MDLabel:
+                            size_hint_y:.12
+                            text:'Ingresar'
+                            font_style:"H5"
+                            halign:'center'
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.primary_color
                         ReplicableTextField:
                             size_hint_x: 1
                             id: user_input
