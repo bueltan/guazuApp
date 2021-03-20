@@ -10,6 +10,7 @@ from kivy.core.window import Window
 import asyncio
 from assets.eval_func_speed import runtime_log
 from sync_data.sync_data import SyncData
+from sync_data.sync_subscriptions import SyncSubscriptions
 import kivy.app
 import plyer
 
@@ -47,6 +48,7 @@ class MainWid(ScreenManager):
         account = kwargs.get('account')
         self.mainNavigation.load_subscriptions_from_db(account)
 
+
 class MainApp(MDApp):
     def app_func(self):
         async def run_wrapper():
@@ -82,7 +84,6 @@ class MainApp(MDApp):
     def on_start(self):
         #self.fps_monitor_start()
         plyer.notification.notify(title='test', message="Notification using plyer")
-        plyer.facades.FileChooser
         return True
 
     def on_stop(self):

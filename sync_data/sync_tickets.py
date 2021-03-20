@@ -19,7 +19,7 @@ class SyncTickets(object):
         self.timestamp = timestamp
 
     def load_from_db(self):
-        tickets = self.model_tks.query.filter_by(subscription_id=self.subscription_id)
+        tickets = self.model_tks.query.filter_by(subscription_id=self.subscription_id).order_by(ModelTickets.timestamp.desc())
         logging.info("SyncTickets load_from_db dictionary: %s ", tickets)
         return tickets
 

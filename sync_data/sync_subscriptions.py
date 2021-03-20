@@ -1,23 +1,18 @@
 from kivymd.uix.snackbar import Snackbar
 from assets.eval_func_speed import runtime_log
 from database.model_subscription import ModelSubscriptions
-from general_functions import functions
-
+from main_navigation.main_navigation import MainNavigation
 import logging
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 
 class SyncSubscriptions(object):
 
-    def __init__(self, account_id=None, session=None):
+    def __init__(self ,account_obj=None, account_id=None, session=None):
         self.model_sub = ModelSubscriptions()
+        self.account_obj = account_obj
         self.account_id = account_id
         self.session = session
-
-    def load_from_db(self):
-        subs_from_db = self.model_sub.query.filter_by(id_account=functions.decode(self.account_id))
-        logging.info("SyncSubscriptions get from db account id: %s", functions.decode(self.account_id))
-        return subs_from_db
 
     def update_timestamp_sync_subs(self, timestamp, id):
         self.model_sub = self.model_sub.query.get(id)
@@ -25,6 +20,10 @@ class SyncSubscriptions(object):
         self.model_sub.last_sync_timestamp = timestamp
         self.session.merge(self.model_sub)
         logging.info(" Update_timestamp_sync_subs %s")
+
+    def create_subscription_interfaces(self):
+        MainNavigation().build_card_subscription(subscription=self.model_sub, account=self.account_obj)
+
 
     @runtime_log
     def success(self, results=None):
@@ -51,6 +50,7 @@ class SyncSubscriptions(object):
                     subs_from_sever.last_sync_timestamp = 0
                     self.session.add(subs_from_sever)
                     self.model_sub = subs_from_sever
+                    self.create_subscription_interfaces()
 
                 list_object_subscription.append(self.model_sub)
             logging.info(" LIST OBJECT SUBSCRIPTIONS %s", list_object_subscription)

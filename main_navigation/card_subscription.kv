@@ -1,10 +1,10 @@
-<itemTickets>:
+<ItemTickets>:
     source_img : ""
-    name_icon : ""
+    icon_name : ""
     AsyncImageLeftWidget:
         source: root.source_img
     IconRightWidget:
-        icon: root.name_icon
+        icon: root.icon_name
         theme_text_color:"Custom"
         text_color: [1,.8,0,1]
         on_release: print("hello")
@@ -116,7 +116,7 @@
         RelativeLayout:
             RecycleView:
                 id: rv
-                key_viewclass: 'viewclass'
+                key_viewclass: 'view_class'
                 key_size: 'height'
                 RecycleBoxLayout:
                     default_size: None, dp(90)

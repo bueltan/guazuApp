@@ -27,21 +27,13 @@ def get_code_entity(id_name):
 def decode(id):
      return (base64.standard_b64decode(id)).decode("utf-8").split(":")[1]
 
-def code(id):
-    return base64.standard_b64encode(id)
 
-def show_last_msg(payload, word):
-    print(payload)
-    if payload.type == "text":
-        return payload.text
-    if payload.type == "ptt":
-        return word['ticket_audio']
-    if payload.type == "image":
-        return word['ticket_image']
-    if payload.type == "location":
-        return word['ticket_location']
-    if payload.type == "document":
-        return word['ticket_document']
+def code(id):
+    message = id
+    message_bytes = message.encode('utf-8')
+    base64_bytes = base64.b64encode(message_bytes)
+    base64_message = base64_bytes.decode('utf-8')
+    return base64_message
 
 
 def format_text(text):

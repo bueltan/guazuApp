@@ -20,6 +20,8 @@ class SyncData(object):
         self.sessionSQL = base.Session()
         self.account_id = kwargs.get('id')
         self.account_id_name = kwargs.get('id_name')
+        self.account_obj = kwargs.get('account')
+
         self.work_queue = asyncio.PriorityQueue()
         transport = AIOHTTPTransport(url=variables.base_url_http, headers=variables.headers, timeout=100)
         self.client = Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=100)
@@ -40,7 +42,7 @@ class SyncData(object):
         logging.info('producer %s', payload)
         await self.work_queue.put(payload)
 
-    @backoff.on_exception(backoff.expo, Exception, max_time=300, giveup=error)
+    #@backoff.on_exception(backoff.expo, Exception, max_time=300, giveup=error)
     async def execute(self):
         payload = await self.work_queue.get()
         logging.info('execute payload %s', payload)
@@ -50,7 +52,7 @@ class SyncData(object):
             result = await session.execute(payload['query'], variable_values=payload['parameters'])
 
             if payload['function'] == 'sync_subscriptions':
-                list_obj_subscriptions = SyncSubscriptions(self.account_id, self.sessionSQL).success(result)
+                list_obj_subscriptions = SyncSubscriptions(account_obj=self.account_obj, session= self.sessionSQL).success(result)
                 logging.info('sync_subscriptions %s', list_obj_subscriptions)
                 if spread_sync >= 0:
                     for obj_subs in list_obj_subscriptions:
@@ -67,7 +69,7 @@ class SyncData(object):
                     id_subscription = payload['id_subscriptions']
                     list_obj_tickets = SyncTickets(id_subscription, payload['timestamp'], self.sessionSQL).success(result)
                     logging.info(' data_tickets %s', list_obj_tickets)
-                    SyncSubscriptions(self.account_id, self.sessionSQL).\
+                    SyncSubscriptions(account_id=self.account_id, session=self.sessionSQL).\
                         update_timestamp_sync_subs(current_time, id_subscription)
                     logging.info("get messages %s", spread_sync)
                     if spread_sync >= 0:
