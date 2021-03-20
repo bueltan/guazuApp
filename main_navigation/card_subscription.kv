@@ -1,0 +1,126 @@
+<itemTickets>:
+    source_img : ""
+    name_icon : ""
+    AsyncImageLeftWidget:
+        source: root.source_img
+    IconRightWidget:
+        icon: root.name_icon
+        theme_text_color:"Custom"
+        text_color: [1,.8,0,1]
+        on_release: print("hello")
+
+<CardSubscription>:
+    subs_route : subs_route
+    name_account: name_account
+    search_box:search_box
+    origen:origen
+    orientation: "vertical"
+    padding: "1sp"
+    size_hint: 1, 1
+
+    BoxLayout:
+        orientation: "vertical"
+        size_hint:1,1
+        spacing: 5
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: "110sp"
+            spacing: 5
+            padding: 0
+            canvas.before:
+                Color:
+                    rgb: app.theme_cls.primary_color
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius:[2,2,2,2]
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_x: None
+                width: "45sp"
+                id:origen
+                AnchorLayout:
+                    anchor_x:'center'
+                    anchor_y:'center'
+                    MDIconButton:
+                        icon: "menu-open"
+                        theme_text_color:'Custom'
+                        user_font_size: "24sp"
+                        text_color: 1,1,1,.5
+                        halign: "center"
+            MDSeparator:
+                orientation: 'vertical'
+                size_hint_x: None
+                width:1
+                theme_text_color: "Custom"
+                color: 1,1,1,.3
+            BoxLayout:
+                size_hint_x: 0.8
+                orientation: "vertical"
+                padding:5
+                BoxLayout:
+                    orientation: "vertical"
+                    spacing: 6
+                    padding:2
+                    MDLabel:
+                        text: 'Subscripción'
+                        theme_text_color: "Custom"
+                        font_style:"Overline"
+                        text_color: 1,1,1,.9
+                    MDLabel:
+                        id: subs_route
+                        font_size: '19sp'
+                        font_name: 'main_navigation/fonts/Ubuntu-Medium.ttf'
+                        theme_text_color: "Custom"
+                        text_color: 1,1,1,.8
+                    MDLabel:
+                        id: name_account
+                        font_style:"Caption"
+                        font_name: 'main_navigation/fonts/Ubuntu-LightItalic.ttf'
+                        theme_text_color: "Custom"
+                        text_color: 1,1,1,.7
+                BoxLayout:
+                    orientation: "horizontal"
+                    id:search_box
+                    MDIcon:
+                        icon: 'magnify'
+                        pos_hint :{'center_y': .36}
+                        size_hint_x: None
+                        width: "35sp"
+                        theme_text_color:'Custom'
+                        text_color: 1,1,1,.5
+                    MDTextField:
+                        pos_hint :{'center_y': .36}
+                        id: search_field
+                        color_mode: 'custom'
+                        font_size: "17sp"
+                        font_name: 'main_navigation/fonts/Ubuntu-Light.ttf'
+                        hint_text: "Buscar"
+                        hint_text_color: 1,1,1,.5
+                        line_color_focus: 1, 1, 1, 1
+                        line_color_normal: 1,1,1,.5
+                        #on_text: root.set_list_data(self.text, True)
+
+            AnchorLayout:
+                size_hint_x: 0.1
+                anchor_x: "right"
+                anchor_y: "top"
+                MDIconButton:
+                    icon: "cog"
+                    theme_text_color:'Custom'
+                    user_font_size: "24sp"
+                    text_color: 1,1,1,.5
+
+
+        RelativeLayout:
+            RecycleView:
+                id: rv
+                key_viewclass: 'viewclass'
+                key_size: 'height'
+                RecycleBoxLayout:
+                    default_size: None, dp(90)
+                    default_size_hint: 1, None
+                    size_hint_y: None
+                    height: self.minimum_height
+                    orientation: 'vertical'

@@ -14,3 +14,4 @@ class ModelAccount(Base):
     avatar = Column('avatar', String(40), doc="dir of image avatar")
     keepOpen = Column('keepOpen', Boolean, default=False, doc="get in without write user and password")
     current = Column('current', Boolean, default = True, doc=" if the current account")
+

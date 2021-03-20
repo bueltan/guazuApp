@@ -18,3 +18,10 @@ class ModelMessages(Base):
     payload = Column('payload', String(100), doc="Latitude and longitude")
     vcardList = Column('vcardList', String(1000), doc="List of the vcard")
     timestamp = Column('timestamp', Integer, doc="Record timestamp.")
+    success = Column('success',
+                     Boolean,
+                     doc="if this message is received for the server ")
+    success_api = Column('success_api', Boolean,
+                     doc="if this message is received for the external api")
+
+

@@ -15,7 +15,10 @@ else:
 
 os.environ["ENTITY_CLIENT_ASSETS"] = os.path.join(os.environ["ENTITY_CLIENT_ROOT"], f"assets{os.sep}")
 
+#Window.softinput_mode = "below_target"
+Window.keyboard_anim_args = {'d': .2, 't': 'in_out_expo'}
 Window.softinput_mode = "below_target"
+
 dir_settings_file = f"{os.environ['ENTITY_CLIENT_ROOT']}/assets/resource_files/settings/GLOBAL_VAR.json"
 dir_language = f"{os.environ['ENTITY_CLIENT_ROOT']}/assets/resource_files/language/spanish_after_login.json"
 assets = f"{os.environ['ENTITY_CLIENT_ROOT']}/assets"

@@ -142,14 +142,14 @@ class Register(MDBoxLayout):
         if (password != '' and len(password) >= 6) and len(password) <= 15:
             pass1_check = True
         else:
-            Snackbar(text="Password len minimum is 6", padding="20dp").open()
+            Snackbar(text="La contraseña tiene que tener como mínimo 6 caracteres", padding="20dp").open()
             pass1_check = False
         return pass1_check
 
     def check_pass2(self):
         passwordSecond = self.second_password.text
         if passwordSecond != self.password.text:
-            Snackbar(text="password don't coincident", padding="20dp").open()
+            Snackbar(text="Las contraseñas no coinciden", padding="20dp").open()
             pass2_check = False
             return pass2_check
 
@@ -158,7 +158,7 @@ class Register(MDBoxLayout):
             pass2_check = True
         else:
             pass2_check = False
-        self.second_password.hint_text = "Repeat password"
+        self.second_password.hint_text = "Repetir contraseña"
         return pass2_check
 
     def check_email(self):
@@ -169,12 +169,12 @@ class Register(MDBoxLayout):
             return email_check
 
         if email.find("@") == -1 or email.find(".") == -1:
-            Snackbar(text="Use validate email", padding="20dp").open()
+            Snackbar(text="escriba un email valido", padding="20dp").open()
             email_check = False
             return email_check
 
         if email == '':
-            Snackbar(text="The email field is required", padding="20dp").open()
+            Snackbar(text="El email es requerido", padding="20dp").open()
             email_check = False
             return email_check
         return True

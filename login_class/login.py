@@ -11,6 +11,9 @@ from database.model_account import ModelAccount
 from database import base
 from connection_endpoint import variables
 
+import logging
+logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+
 
 class Login(MDBoxLayout):
     def __init__(self, mainwid, **kwargs):
@@ -22,8 +25,7 @@ class Login(MDBoxLayout):
         self.id_name = None
         self.password = None
         self.validate_task = None
-
-        #self.data_login = {'my_id': '', 'my_id_account_name': ''}
+        self.account = ModelAccount()
 
     def stop_task_validate(self):
        if self.ck_keepOpen.active == False:
@@ -45,12 +47,14 @@ class Login(MDBoxLayout):
            self.validate_task = asyncio.create_task(self.validate_account(), name="validate_account")
 
     def fatal_code(e):
-        print("fatal_code", e)
+        logging.error(e)
         if 'Authenication Failure' in str(e):
             Snackbar(text="Usuario o contraseña incorrecto", padding="20dp").open()
             return 400
         if 'Temporary failure in name resolution' in str(e):
             Snackbar(text="No se puede establecer connexion con el servidor", padding="20dp").open()
+        else:
+            return 400
 
     @backoff.on_exception(backoff.expo, Exception, max_time=300, giveup=fatal_code)
     async def validate_account(self):
@@ -78,14 +82,10 @@ class Login(MDBoxLayout):
         password = base64.b85encode(self.password.encode("utf-8"))
         account.password = password
         variables.headers.update({'Authorization': 'Bearer '+results['validateAccount']['access_token']})
-        print(variables.headers)
-        await self.mainwid.goto_mainNavigation(id=account.id, id_name=password)
-
-
-
+        logging.info("token : %s", variables.headers)
+        await self.mainwid.goto_mainNavigation(id=account.id, id_name=account.name, account=self.account)
 
     def go_in(self):
-        # DELETE THIS DON'T FORGET
         self.id_name = "." + self.user_input.text.lower()
         self.password = self.password_input.text
         self.create_task_validate_account()
@@ -105,12 +105,12 @@ class Login(MDBoxLayout):
         self.session.close()
 
     def load_account_from_db(self):
-        account = self.session.query(ModelAccount).filter_by(current=1).first()
+        self.account = self.session.query(ModelAccount).filter_by(current=1).first()
         try:
-            if account.keepOpen:
-                self.ck_keepOpen.active = account.keepOpen
-                self.user_input.text = account.id_name.split(".")[1]
-                self.password_input.text = base64.b85decode(account.password).decode("utf-8")
+            if self.account.keepOpen:
+                self.ck_keepOpen.active = self.account.keepOpen
+                self.user_input.text = self.account.id_name.split(".")[1]
+                self.password_input.text = base64.b85decode(self.account.password).decode("utf-8")
                 self.go_in()
 
         except:

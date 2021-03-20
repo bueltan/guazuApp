@@ -27,6 +27,8 @@ def get_code_entity(id_name):
 def decode(id):
      return (base64.standard_b64decode(id)).decode("utf-8").split(":")[1]
 
+def code(id):
+    return base64.standard_b64encode(id)
 
 def show_last_msg(payload, word):
     print(payload)

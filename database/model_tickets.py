@@ -13,8 +13,9 @@ class ModelTickets(Base):
 
     __tablename__ = 'Tickets'
     id = Column('id', String(40), primary_key=True, doc="Id of the tk ")
+    subscription_id = Column('subscription_id', ForeignKey('Subscriptions.id'), doc="Id of the Subscriptions")
     user_id = Column('user_id', String(50), doc="Id of the ticket")
-    channel_id = Column('idCode', String(50), default=0, doc="Id of the destination phone.")
+    channel_id = Column('channel_id', String(50), default=0, doc="Id of the destination phone.")
     node2 = Column('node2', String(15), default='', doc="Entity")
     node3 = Column('node3', String(15), default='', doc="area")
     node4 = Column('node4', String(15), default='', doc="account")
