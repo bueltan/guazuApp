@@ -1,8 +1,6 @@
 from kivymd.uix.snackbar import Snackbar
 from assets.eval_func_speed import runtime_log
-from database import base
 from database.model_messages import ModelMessages
-from general_functions import functions
 
 import logging
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
@@ -10,18 +8,24 @@ logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(level
 
 class SyncMessages(object):
 
-    def __init__(self, ticket_id=None, timestamp=0, session=None):
+    def __init__(self, MainClass=None, ticket_id=None, timestamp=0, session=None, id_subscription= None):
         self.ticket_id = ticket_id
         self.timestamp = timestamp
         self.session = session
         self.model_msgs = ModelMessages
+        self.main_class = MainClass
+        self.subscription_id = id_subscription
 
-    def load_last_msg_from_db(self, id_message):
-        id_message = functions.code('Message:' + id_message)
-        logging.info("Id msg code base64: %s", id_message)
-        last_msg_db = self.model_msgs.query.get(id_message)
-        logging.info("Get last msg: %s", last_msg_db)
-        return last_msg_db
+    def update_ticket_tertiary_msg(self, model_msgs):
+        if self.main_class:
+
+            lists_instance_class_subs = self.main_class.mainNavigation.list_card_sub
+            logging.info("conteiner_cards_subscriptions %s", lists_instance_class_subs)
+            for instance_card_sub in lists_instance_class_subs:
+                if instance_card_sub.id == self.subscription_id:
+                    tertiary_text = instance_card_sub.Conversations_tks.get_tertiary_text(last_id_msg=model_msgs.id)
+                    instance_card_sub.Conversations_tks.mutate_list_tickets(tertiary_text=tertiary_text, id_tk=self.ticket_id)
+
 
     @runtime_log
     def success(self, results=None):
@@ -34,4 +38,5 @@ class SyncMessages(object):
                 message = message['node']
                 model_msgs = ModelMessages(**message)
                 self.session.merge(model_msgs)
+                self.update_ticket_tertiary_msg(model_msgs)
         return

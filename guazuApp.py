@@ -1,38 +1,38 @@
-import os
+from kivy.core.text import LabelBase
 from kivy.loader import Loader
 from kivymd import images_path
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen
 from login_class.login import Login
+from path import assets_fonts
 from register_class.register import Register
 from main_navigation.main_navigation import MainNavigation
 from kivy.core.window import Window
 import asyncio
-from assets.eval_func_speed import runtime_log
 from sync_data.sync_data import SyncData
-from sync_data.sync_subscriptions import SyncSubscriptions
-import kivy.app
 import plyer
+from assets.eval_func_speed import runtime_log
 
 
-class MainWid(ScreenManager):
+class GuazuApp(ScreenManager):
     def __init__(self, **kwargs):
-        super(MainWid, self).__init__()
+        super(GuazuApp, self).__init__()
         self.Login = Login(self)
         self.Register = Register(self)
         wid = Screen(name='loginScreen')
         wid.add_widget(self.Login)
+
         self.add_widget(wid)
 
         self.mainNavigation = MainNavigation()
         wid = Screen(name='mainNavigationScreen')
         wid.add_widget(self.mainNavigation)
         self.add_widget(wid)
-
         wid = Screen(name='RegisterScreen')
         wid.add_widget(self.Register)
         self.add_widget(wid)
 
+        self.SyncData = SyncData(self)
         self.goto_login()
 
     def goto_login(self):
@@ -43,13 +43,16 @@ class MainWid(ScreenManager):
         self.current = 'RegisterScreen'
 
     async def goto_mainNavigation(self, **kwargs):
-        await SyncData(**kwargs).sync_subscriptions(3)
+        self.account = kwargs.get('account')
+        await self.SyncData.sync_subscriptions(self.account, 3)
         self.current = 'mainNavigationScreen'
-        account = kwargs.get('account')
-        self.mainNavigation.load_subscriptions_from_db(account)
+        self.mainNavigation.load_subscriptions_from_db(self.account)
 
 
 class MainApp(MDApp):
+    LabelBase.register(name='UbuntuEmoji',
+                       fn_regular=assets_fonts + 'Ubuntu-Regular.pfb')
+
     def app_func(self):
         async def run_wrapper():
             await self.async_run(async_lib='asyncio')
@@ -65,7 +68,7 @@ class MainApp(MDApp):
         finally:
             # when canceled, print that it finished
             print('Done wasting time')
-
+    @runtime_log
     def build(self):
         Loader.loading_image = f"{images_path}transparent.png"
         self.load_kv("register_class/register.kv")
@@ -74,12 +77,12 @@ class MainApp(MDApp):
         self.load_kv("main_navigation/main_navigation.kv")
 
         self.title = 'GuazuApp'
-        Window.size = (400, 800)  # more common dimensions for mobiles, delete this for building
-        self.theme_cls.primary_palette = "Purple"  # "Purple", "Red"
+        Window.size = (540, 960)  # more common dimensions for mobiles, delete this for building
+        self.theme_cls.primary_palette = "Teal"  # "Purple", "Red"
         self.theme_cls.theme_style = "Light"  # ""
-        self.theme_cls.primary_hue = "900"  # "500"
+        self.theme_cls.primary_hue = "400"  # "500"
 
-        return MainWid()
+        return GuazuApp()
 
     def on_start(self):
         #self.fps_monitor_start()
@@ -97,6 +100,7 @@ class MainApp(MDApp):
 
 
 if __name__ == "__main__":
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(MainApp().app_func())
     loop.close()

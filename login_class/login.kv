@@ -6,7 +6,6 @@
     multiline: False
     required: True
     max_text_length: 32
-    helper_text: "Este campo es requerido"
     line_color_normal: primary_color
     color_mode: 'custom'
     line_color_focus: primary_color
@@ -25,11 +24,14 @@
         AnchorLayout:
             anchor_x:'center'
             anchor_y:'bottom'
-            size_hint : (1, .15)
-            Image:
-                id: avatar
-                size: self.texture_size
-                source: "assets/guazuapp50.png"
+            size_hint : (1, .22)
+            MDLabel:
+                font_size: "280sp"
+                text:'A'
+                halign:'center'
+                font_name: './assets/fonts/guazuapp2.ttf'
+                theme_text_color: "Custom"
+                text_color: app.theme_cls.primary_color
         AnchorLayout:
             anchor_x:'center'
             anchor_y:'center'
@@ -43,8 +45,8 @@
                 size_hint_max_x: 525
                 size_hint_max_y: 500
                 spacing: 30
-
                 MDCard:
+                    padding:20
                     elevation: 0
                     BoxLayout:
                         orientation:'vertical'
@@ -52,23 +54,22 @@
                         spacing: 30
                         MDLabel:
                             size_hint_y:.12
-                            text:'Ingresar'
+                            text:'Inicio'
+                            font_name: './assets/fonts/Ubuntu-Medium.ttf'
                             font_style:"H5"
                             halign:'center'
                             theme_text_color: "Custom"
                             text_color: app.theme_cls.primary_color
-                        ReplicableTextField:
+                        MDTextField:
                             size_hint_x: 1
                             id: user_input
                             write_tab: False
-                            hint_text: "ID Nombre o Email"
-                            helper_text_mode: "on_error"
-                        ReplicableTextField:
+                            hint_text: "Cuenta o email"
+                        MDTextField:
                             size_hint_x: 1
                             id: password_input
                             write_tab: False
                             hint_text: "Contraseña"
-                            helper_text_mode: "on_error"
                             password:True
 
                         BoxLayout:
@@ -85,9 +86,9 @@
                             MDTextButton:
                                 pos_hint: {'center_x': 0, 'center_y': 1}
                                 id: keepOpen
-                                text: "Auto login"
+                                text: "Auto inicio"
                         MDRaisedButton:
-                            text: 'In'
+                            text: 'Ingresar'
                             size_hint_x : 1
                             on_press: root.go_in()
                         MDTextButton:
@@ -96,6 +97,9 @@
                         MDTextButton:
                             pos_hint: {'center_x': .5, 'center_y': .5}
                             text: 'Registrarse'
+                            font_name: './assets/fonts/Ubuntu-Medium.ttf'
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.primary_color
                             on_release:root.go_to_register()
 
 

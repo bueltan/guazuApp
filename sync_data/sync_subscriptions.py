@@ -1,18 +1,18 @@
 from kivymd.uix.snackbar import Snackbar
 from assets.eval_func_speed import runtime_log
 from database.model_subscription import ModelSubscriptions
-from main_navigation.main_navigation import MainNavigation
 import logging
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 
 class SyncSubscriptions(object):
 
-    def __init__(self ,account_obj=None, account_id=None, session=None):
+    def __init__(self, MainClass=None, account_obj=None, account_id=None, session=None):
         self.model_sub = ModelSubscriptions()
         self.account_obj = account_obj
         self.account_id = account_id
         self.session = session
+        self.main_class = MainClass
 
     def update_timestamp_sync_subs(self, timestamp, id):
         self.model_sub = self.model_sub.query.get(id)
@@ -22,7 +22,9 @@ class SyncSubscriptions(object):
         logging.info(" Update_timestamp_sync_subs %s")
 
     def create_subscription_interfaces(self):
-        MainNavigation().build_card_subscription(subscription=self.model_sub, account=self.account_obj)
+        if self.main_class:
+            logging.info("MainClass type: %s", type(self.main_class))
+            self.main_class.mainNavigation.build_card_subscription(account=self.account_obj, subscription=self.model_sub)
 
 
     @runtime_log

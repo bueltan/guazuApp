@@ -7,77 +7,93 @@
     second_password : second_password_input
     BoxLayout:
         orientation: 'vertical'
-        rows: 1
+        rows: 2
         size: root.size
-        padding: "10dp"
+        padding: "20dp"
+        AnchorLayout:
+            anchor_x:'center'
+            anchor_y:'bottom'
+            size_hint : (1, .22)
+            MDLabel:
+                font_size: "300sp"
+                text:'B'
+                halign:'center'
+                valign: 'bottom'
+                font_name: './assets/fonts/guazuapp2.ttf'
+                theme_text_color: "Custom"
+                text_color: app.theme_cls.primary_color
+
         AnchorLayout:
             anchor_x:'center'
             anchor_y:'center'
-            size_hint : (1, 1)
+            size_hint : (1, .85)
             BoxLayout:
                 orientation:'vertical'
-                size_hint_y: .9
-                size_hint_x: .95
+                size_hint_y: 1
+                size_hint_x: 1
                 size_hint_min_x: 250
                 size_hint_min_y: 500
-                size_hint_max_x: 525
-                size_hint_max_y: 625
+                size_hint_max_x: 700
+                size_hint_max_y: 700
                 spacing: 30
                 MDCard:
                     elevation: .0
+                    padding:20
                     BoxLayout:
                         orientation:'vertical'
                         padding: 10
-                        spacing: 30
+                        spacing: 20
                         MDLabel:
-                            text:'Registrase'
+                            text:'Crear una cuenta en GuazuApp'
                             font_style:"H5"
                             halign:'center'
+                            valign: 'top'
+                            font_name: './assets/fonts/Ubuntu-Medium.ttf'
                             theme_text_color: "Custom"
                             text_color: app.theme_cls.primary_color
-                        ReplicableTextField:
+
+                        MDTextField:
                             id: name_input
                             size_hint_x: 1
                             write_tab: False
-                            hint_text:'Your name'
-                            max_text_length: 15
+                            hint_text:'Tú nombre'
 
-
-                        ReplicableTextField:
+                        MDTextField:
                             id: user_input
                             size_hint_x: 1
                             write_tab: False
-                            hint_text:'Account name'
-                            max_text_length: 15
+                            hint_text:'Nombre de cuenta'
 
-                        ReplicableTextField:
+                        MDTextField:
                             id: password_input
                             size_hint_x: 1
                             write_tab: False
-                            hint_text: "Password"
+                            hint_text: "Contraseña"
                             password:True
                             max_text_length: 15
-                        ReplicableTextField:
+                        MDTextField:
                             id: second_password_input
                             size_hint_x: 1
                             write_tab: False
-                            hint_text: "Repeat password"
+                            hint_text: "Repetir contraseña"
                             password:True
                             max_text_length: 15
-                        ReplicableTextField:
+                        MDTextField:
                             id: email_input
                             size_hint_x: 1
                             write_tab: False
                             hint_text: "Email"
 
-
                         MDRaisedButton:
-                            text: 'Up'
+                            text: 'Crear cuenta'
                             size_hint_x : 1
                             on_press: root.to_create_account()
 
                         MDTextButton:
-                            text: 'Sign in'
+                            text: 'Inicio'
+                            font_name: './assets/fonts/Ubuntu-Medium.ttf'
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.primary_color
                             pos_hint: {'center_x': .5, 'center_y': .5}
                             on_release:root.go_to_login()
 

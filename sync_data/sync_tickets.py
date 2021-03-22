@@ -1,9 +1,7 @@
 from kivymd.uix.snackbar import Snackbar
 from assets.eval_func_speed import runtime_log
-from database import base
 from database.model_tickets import ModelTickets
 from database.model_messages import ModelMessages
-from general_functions import functions
 import logging
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
@@ -12,17 +10,26 @@ list_objects_tks = []
 
 class SyncTickets(object):
 
-    def __init__(self, subscription_id=None, timestamp = 0, session=None ):
+    def __init__(self, MainClass=None, subscription_id=None, timestamp=0, session=None):
+        """
+        :type MainClass: object
+
+        """
         self.session = session
         self.model_tks = ModelTickets()
         self.subscription_id = subscription_id
         self.timestamp = timestamp
+        self.main_class = MainClass
 
-    def load_from_db(self):
-        tickets = self.model_tks.query.filter_by(subscription_id=self.subscription_id).order_by(ModelTickets.timestamp.desc())
-        logging.info("SyncTickets load_from_db dictionary: %s ", tickets)
-        return tickets
-
+    def update_list_objects_tks(self, model_tks):
+        if self.main_class:
+            logging.info("update_list_objects_tks ")
+            lists_instance_class_subs = self.main_class.mainNavigation.list_card_sub
+            logging.info("conteiner_cards_subscriptions %s", lists_instance_class_subs)
+            for instance_card_sub in lists_instance_class_subs:
+                if instance_card_sub.id == self.subscription_id:
+                    list_dict_tks = instance_card_sub.Conversations_tks.build_list_data_tks(model_tks)
+                    instance_card_sub.Conversations_tks.mutate_list_tickets(list_dict_tks)
     @runtime_log
     def success(self, results=None):
         results = results
@@ -45,8 +52,8 @@ class SyncTickets(object):
                     model_msgs = ModelMessages(**message)
                     self.session.merge(model_msgs)
             list_objects_tks.append(self.model_tks)
-
-        return list_objects_tks
+            self.update_list_objects_tks(list_objects_tks)
+            return list_objects_tks
 
 
 

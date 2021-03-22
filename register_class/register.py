@@ -1,14 +1,11 @@
 import asyncio
 import base64
 import hashlib
-
 import backoff as backoff
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
-from kivy.network.urlrequest import UrlRequest
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.snackbar import Snackbar
-from login_class import login
 from connection_endpoint import variables
 from database import base
 from database.model_account import ModelAccount
@@ -117,23 +114,20 @@ class Register(MDBoxLayout):
 
     def check_name(self):
         if self.name.text == '':
-            Snackbar(text="This field is required", padding="20dp").open()
+            Snackbar(text="Tú nombre es necesario.", padding="20dp").open()
             return False
         return True
 
     def check_account(self):
         user = "." + self.user.text.lower()
         if user == '':
-            Snackbar(text="This field is required", padding="20dp").open()
+            Snackbar(text="Nombre de cuenta es requerido", padding="20dp").open()
             return False
 
         if len(user) < 5 or len(user) > 15:
-            Snackbar(text=" Account name min 5 , max: 15 ", padding="20dp").open()
+            Snackbar(text="Nombre de cuenta entre 5 y 15 caracteres ", padding="20dp").open()
             return False
 
-        if user == '':
-            Snackbar(text="This field is required", padding="20dp").open()
-            return False
 
         return True
 
@@ -164,17 +158,17 @@ class Register(MDBoxLayout):
     def check_email(self):
         email = self.email.text.lower()
         if email.find(" ") > -1:
-            Snackbar(text="User name field without blanks", padding="20dp").open()
+            Snackbar(text="Email no puede contener espacios en blanco.", padding="20dp").open()
             email_check = False
             return email_check
 
         if email.find("@") == -1 or email.find(".") == -1:
-            Snackbar(text="escriba un email valido", padding="20dp").open()
+            Snackbar(text="Email no valido.", padding="20dp").open()
             email_check = False
             return email_check
 
         if email == '':
-            Snackbar(text="El email es requerido", padding="20dp").open()
+            Snackbar(text="Email es requerido", padding="20dp").open()
             email_check = False
             return email_check
         return True
@@ -194,10 +188,10 @@ class Register(MDBoxLayout):
             print("create_account")
             self.create_task_account(name, user, password, email)
         else:
-            if A is False: Snackbar(text="Account name invalidate", padding="20dp").open()
-            if B is False or D is False: Snackbar(text="Password incorrect", padding="20dp").open()
-            if C is False: Snackbar(text="Email invalidate", padding="20dp").open()
-            if E is False: Snackbar(text="Name is required ", padding="20dp").open()
+            if A is False: Snackbar(text="Nombre de cuenta no valido", padding="20dp").open()
+            if B is False or D is False: Snackbar(text="Contraseña no valida", padding="20dp").open()
+            if C is False: Snackbar(text="Email invalido", padding="20dp").open()
+            if E is False: Snackbar(text="El campo nombre es requerido", padding="20dp").open()
 
     def go_to_login(self):
         self.mainwid.goto_login()
