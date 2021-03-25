@@ -11,13 +11,14 @@ from database import base
 from sync_data.sync_messages import SyncMessages
 import asyncio
 import logging
+
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 
 class SyncData(object):
     def __init__(self, MainClass):
         self.sessionSQL = base.Session()
-        self.work_queue = asyncio.PriorityQueue()
+        self.work_queue = asyncio.Queue()
         transport = AIOHTTPTransport(url=variables.base_url_http, headers=variables.headers, timeout=100)
         self.client = Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=100)
         self.account_id = None
@@ -26,8 +27,8 @@ class SyncData(object):
     async def graphql_connection(self, **kwargs):
         logging.info("graphql_connection %s", kwargs)
         task_producer = [asyncio.create_task(self.producer(**kwargs))]
-        asyncio.create_task(self.execute())
         asyncio.gather(*task_producer, return_exceptions=True)
+        asyncio.create_task(self.execute())
 
     async def producer(self, **kwargs):
         payload = {}
@@ -39,21 +40,23 @@ class SyncData(object):
     def error(error):
         logging.error(str(error))
 
-    #@backoff.on_exception(backoff.expo, Exception, max_time=300, giveup=error)
+    @backoff.on_exception(backoff.expo, Exception, max_tries= 10, giveup=error)
     async def execute(self):
-        payload = await self.work_queue.get()
-        logging.info('execute payload %s', payload)
-        spread_sync = payload['spread_sync'] - 1
+
         async with self.client as session:
+            payload = await self.work_queue.get()
+            spread_sync = payload['spread_sync'] - 1
             logging.info("to execute parameters %s and query %s", payload['parameters'], payload['query'])
+
             result = await session.execute(payload['query'], variable_values=payload['parameters'])
 
-            """ Result execute Sync subscriptions """
+            """ Result subscribe Sync subscriptions """
 
             if payload['function'] == 'sync_subscriptions':
                 account = payload['account']
-                list_obj_subscriptions = SyncSubscriptions(MainClass=self.main_class, account_obj=account,
+                list_obj_subscriptions = await SyncSubscriptions(MainClass=self.main_class, account_obj=account,
                                                            session=self.sessionSQL).success(result)
+
                 logging.info('sync_subscriptions %s', list_obj_subscriptions)
                 if spread_sync >= 0:
                     for obj_subs in list_obj_subscriptions:
@@ -62,42 +65,57 @@ class SyncData(object):
                     self.sessionSQL.commit()
                     self.sessionSQL.close()
 
-            """ Result execute Sync tickets """
+            """ Result subscribe Sync tickets """
 
             if payload['function'] == 'sync_tickets':
+                logging.info("Result subscribe Sync tickets¿'")
+                id_subscription = payload['id_subscriptions']
                 current_time = int(time.time())
-                logging.info('sync_tickets %s', result)
-                logging.info('sync_tickets timestamp %s', payload['timestamp'])
+
+                """ update timestamp last sync """
 
                 if len(result['get_tickets']['edges']) > 0:
-                    id_subscription = payload['id_subscriptions']
                     list_obj_tickets = SyncTickets(subscription_id=id_subscription,
                                                    MainClass=self.main_class,
                                                    timestamp=payload['timestamp'],
                                                    session=self.sessionSQL).success(result)
-
-                    logging.info(' data_tickets %s', list_obj_tickets)
-
-                    """ update timestamp last sync """
-
-                    SyncSubscriptions(account_id=self.account_id, session=self.sessionSQL).\
-                        update_timestamp_sync_subs(current_time, id_subscription)
-                    logging.info("get messages %s", spread_sync)
+                    logging.info("323232323-update_timestamp_sync_subs")
 
                     if spread_sync >= 0:
+                        logging.info("1111111SyncSubscriptions-update_timestamp_sync_subs")
+
+                        logging.info("Result subscribe Sync tickets spread_sync >= 0 get messages tk a tk %s",
+                                     payload['timestamp'])
+
                         for obj_tks in list_obj_tickets:
                             await self.sync_messages(id_ticket=obj_tks.id,
                                                      timestamp=payload['timestamp'],
                                                      spread_sync=spread_sync,
                                                      id_subscription=id_subscription)
+
+                        SyncSubscriptions(account_id=self.account_id, session=self.sessionSQL). \
+                            update_timestamp_sync_subs(current_time, id_subscription)
+                        self.sessionSQL.commit()
                     else:
+                        logging.info("323232323-update_timestamp_sync_subs")
+                        logging.info("SyncSubscriptions-update_timestamp_sync_subs")
+                        SyncSubscriptions(account_id=self.account_id, session=self.sessionSQL). \
+                            update_timestamp_sync_subs(current_time, id_subscription)
                         self.sessionSQL.commit()
                         self.sessionSQL.close()
 
-            """ Result execute Sync messages """
+
+                else:
+                    logging.info("SyncSubscriptions-update_timestamp_sync_subs")
+                    SyncSubscriptions(account_id=self.account_id, session=self.sessionSQL). \
+                        update_timestamp_sync_subs(current_time, id_subscription)
+                    self.sessionSQL.commit()
+                    self.sessionSQL.close()
+
+            """ Result subscribe Sync messages """
 
             if payload['function'] == 'sync_messages':
-                logging.info('sync_messages %s', result)
+                logging.info('Result subscribe Sync messages sync_messages %s', result)
                 SyncMessages(ticket_id=payload['id_ticket'],
                              MainClass=self.main_class,
                              timestamp=payload['timestamp'],
@@ -105,16 +123,14 @@ class SyncData(object):
                              session=self.sessionSQL).success(result)
 
                 if spread_sync >= 0:
-                    logging.info("Download Multimedia msg")
-                self.sessionSQL.commit()
-                self.sessionSQL.close()
+                    logging.info("Result subscribe Sync messages, download Multimedia msg")
 
-    """" Sync Message """
+        self.work_queue.task_done()
+        """" Sync Subscription """
 
     async def sync_subscriptions(self, account, spread_sync=0):
         self.account_id = account.id
-
-        logging.info("sync_subscriptions spread_sync: %s", spread_sync)
+        logging.info("Sync Subscription Build Query, spread_sync: %s", spread_sync)
         query = gql(""" 
                 query ($id_account: ID! ){subscription_list (id_account:$id_account)
                            {edges {node {id source id_account}}}}
@@ -127,8 +143,8 @@ class SyncData(object):
 
     """" Sync Tickets """
 
-    async def sync_tickets(self, spread_sync, id_subscription=None, timestamp= 0):
-        logging.info("sync_tickets spread_sync: %s", spread_sync)
+    async def sync_tickets(self, spread_sync, id_subscription=None, timestamp=0):
+        logging.info("Sync Tickets Build Query, timestamp: %s", timestamp)
         timestamp = timestamp
         if timestamp == 0:
             query = gql(""" 
@@ -151,7 +167,7 @@ class SyncData(object):
                                           node4, name, timestamp, image, phone, last_id_msg}}}}
                           """)
 
-        parameters = {'id_subscription': id_subscription, 'timestamp': timestamp }
+        parameters = {'id_subscription': id_subscription, 'timestamp': timestamp}
 
         function = 'sync_tickets'
 
@@ -162,8 +178,8 @@ class SyncData(object):
     """" Sync Messages """
 
     async def sync_messages(self, id_ticket=None, timestamp=0, spread_sync=0, id_subscription=None):
-        logging.info("sync_messages id_tk: %s:", id_ticket)
-        logging.info("sync_messages timestamp: %s:", timestamp)
+
+        logging.info(f"Sync Messages Build Query id_tk {id_ticket}, timestamp{timestamp}:")
 
         query = gql(""" 
                        query ($id_ticket: ID! $timestamp: Int!) {list_message (tickets_id: $id_ticket,

@@ -1,6 +1,8 @@
 import asyncio
 import base64
 import hashlib
+import logging
+
 import backoff as backoff
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
@@ -24,6 +26,8 @@ class Register(MDBoxLayout):
         self.task_create_account = None
 
     def create_task_account(self, name, user, password, email):
+        logging.info(f"create_task_account, name: {name}, user: {user}, password: {password}, email:{email}" )
+
         if self.task_create_account == None:
             self.task_create_account = asyncio.create_task(self.create_account(name, user, password, email))
         else:
@@ -52,7 +56,7 @@ class Register(MDBoxLayout):
         password = (hashlib.md5(password.encode('utf-8')).hexdigest())
         transport = AIOHTTPTransport(url=variables.base_url_http)
 
-        async with Client(transport=transport, fetch_schema_from_transport=True ) as session:
+        async with Client(transport=transport, fetch_schema_from_transport=True) as session:
             # Execute single query
             query = gql(
                 '''mutation ($name: String!, $id_name: String!, $password:String!, $email:String! ){createAccount (input:{name:$name

@@ -15,11 +15,12 @@ class SyncSubscriptions(object):
         self.main_class = MainClass
 
     def update_timestamp_sync_subs(self, timestamp, id):
+        logging.info("begin Update_timestamp_sync_subs %s", timestamp)
         self.model_sub = self.model_sub.query.get(id)
         self.model_sub.id = id
         self.model_sub.last_sync_timestamp = timestamp
         self.session.merge(self.model_sub)
-        logging.info(" Update_timestamp_sync_subs %s")
+        logging.info("end Update_timestamp_sync_subs %s", timestamp)
 
     def create_subscription_interfaces(self):
         if self.main_class:
@@ -28,9 +29,9 @@ class SyncSubscriptions(object):
 
 
     @runtime_log
-    def success(self, results=None):
+    async def success(self, results=None):
         list_object_subscription = []
-        logging.info("Result success subscriptions %s", results)
+        logging.info("Result success  SyncSubscriptions %s", results)
         if 'errors' in results:
             Snackbar(text=results['errors'][0]['message'], padding="20dp").open()
         else:
@@ -52,9 +53,12 @@ class SyncSubscriptions(object):
                     subs_from_sever.last_sync_timestamp = 0
                     self.session.add(subs_from_sever)
                     self.model_sub = subs_from_sever
+                    self.session.commit()
                     self.create_subscription_interfaces()
+                    await self.main_class.open_tunnel(subscription_id=subs_from_sever.id, timestamp= 0)
 
                 list_object_subscription.append(self.model_sub)
+
             logging.info(" LIST OBJECT SUBSCRIPTIONS %s", list_object_subscription)
 
             return list_object_subscription

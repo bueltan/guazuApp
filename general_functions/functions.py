@@ -28,7 +28,7 @@ def decode(id):
      return (base64.standard_b64decode(id)).decode("utf-8").split(":")[1]
 
 
-def code(id):
+def encode(id):
     message = id
     message_bytes = message.encode('utf-8')
     base64_bytes = base64.b64encode(message_bytes)

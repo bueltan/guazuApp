@@ -23,13 +23,12 @@ class SyncTickets(object):
 
     def update_list_objects_tks(self, model_tks):
         if self.main_class:
-            logging.info("update_list_objects_tks ")
             lists_instance_class_subs = self.main_class.mainNavigation.list_card_sub
-            logging.info("conteiner_cards_subscriptions %s", lists_instance_class_subs)
             for instance_card_sub in lists_instance_class_subs:
                 if instance_card_sub.id == self.subscription_id:
                     list_dict_tks = instance_card_sub.Conversations_tks.build_list_data_tks(model_tks)
                     instance_card_sub.Conversations_tks.mutate_list_tickets(list_dict_tks)
+
     @runtime_log
     def success(self, results=None):
         results = results
@@ -40,18 +39,20 @@ class SyncTickets(object):
             for ticket in tickets:
                 ticket = ticket['node']
                 ticket['subscription_id'] = self.subscription_id
-                logging.info('id ticket: %s', ticket)
                 if self.timestamp == 0:
                     messages = ticket.pop('listMessage')
                 self.model_tks = ModelTickets(**ticket)
                 self.session.merge(self.model_tks)
-            if self.timestamp == 0:
-                messages = messages['edges']
-                for message in messages:
-                    message = message['node']
-                    model_msgs = ModelMessages(**message)
-                    self.session.merge(model_msgs)
-            list_objects_tks.append(self.model_tks)
+
+                if self.timestamp == 0:
+                    messages = messages['edges']
+                    for message in messages:
+                        message = message['node']
+                        model_msgs = ModelMessages(**message)
+                        self.session.merge(model_msgs)
+                self.session.commit()
+                list_objects_tks.append(self.model_tks)
+
             self.update_list_objects_tks(list_objects_tks)
             return list_objects_tks
 

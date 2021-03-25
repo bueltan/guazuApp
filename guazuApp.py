@@ -1,16 +1,20 @@
+import logging
+import asyncio
 from kivy.core.text import LabelBase
 from kivy.loader import Loader
 from kivymd import images_path
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen
+from database.model_subscription import ModelSubscriptions
+from general_functions import functions
 from login_class.login import Login
 from path import assets_fonts
 from register_class.register import Register
 from main_navigation.main_navigation import MainNavigation
 from kivy.core.window import Window
-import asyncio
 from sync_data.sync_data import SyncData
-import plyer
+from sync_data.Update_Interface import UpdateInterface
+from sync_data.tunnel_subscriptions import TunnelSubscriptions
 from assets.eval_func_speed import runtime_log
 
 
@@ -21,9 +25,7 @@ class GuazuApp(ScreenManager):
         self.Register = Register(self)
         wid = Screen(name='loginScreen')
         wid.add_widget(self.Login)
-
         self.add_widget(wid)
-
         self.mainNavigation = MainNavigation()
         wid = Screen(name='mainNavigationScreen')
         wid.add_widget(self.mainNavigation)
@@ -31,7 +33,8 @@ class GuazuApp(ScreenManager):
         wid = Screen(name='RegisterScreen')
         wid.add_widget(self.Register)
         self.add_widget(wid)
-
+        self.Update_interface = UpdateInterface(self)
+        self.TunnelSubscriptions = TunnelSubscriptions(self)
         self.SyncData = SyncData(self)
         self.goto_login()
 
@@ -42,12 +45,25 @@ class GuazuApp(ScreenManager):
     def goto_register(self):
         self.current = 'RegisterScreen'
 
+    async def open_tunnel(self, subscription_id= None, timestamp=0):
+        if self.account:
+            subscriptions = ModelSubscriptions.query.filter_by(id_account=functions.decode(self.account.id))
+            if subscription_id is None:
+                for subscription in subscriptions:
+                    await self.TunnelSubscriptions.tunnel_subscriptions(subscription_id=subscription.id,
+                                                                        timestamp=subscription.last_sync_timestamp)
+            else:
+                await self.TunnelSubscriptions.tunnel_subscriptions(subscription_id=subscription_id,
+                                                                    timestamp=timestamp)
+
     async def goto_mainNavigation(self, **kwargs):
         self.account = kwargs.get('account')
-        await self.SyncData.sync_subscriptions(self.account, 3)
         self.current = 'mainNavigationScreen'
+        await self.SyncData.sync_subscriptions(self.account, 3)
         self.mainNavigation.load_subscriptions_from_db(self.account)
-
+        logging.info("Is time to open tunnel")
+        logging.info("asyncio %s", asyncio.as_completed)
+        await self.open_tunnel()
 
 class MainApp(MDApp):
     LabelBase.register(name='UbuntuEmoji',
@@ -60,14 +76,6 @@ class MainApp(MDApp):
 
         return asyncio.gather(run_wrapper())
 
-    async def check_connection(self):
-        try:
-            await asyncio.sleep(2)
-        except asyncio.CancelledError as e:
-            print('Wasting time was canceled', e)
-        finally:
-            # when canceled, print that it finished
-            print('Done wasting time')
     @runtime_log
     def build(self):
         Loader.loading_image = f"{images_path}transparent.png"
@@ -80,13 +88,12 @@ class MainApp(MDApp):
         Window.size = (540, 960)  # more common dimensions for mobiles, delete this for building
         self.theme_cls.primary_palette = "Teal"  # "Purple", "Red"
         self.theme_cls.theme_style = "Light"  # ""
-        self.theme_cls.primary_hue = "400"  # "500"
+        self.theme_cls.primary_hue = "900"  # "500"
 
         return GuazuApp()
 
     def on_start(self):
-        #self.fps_monitor_start()
-        plyer.notification.notify(title='test', message="Notification using plyer")
+        self.fps_monitor_start()
         return True
 
     def on_stop(self):
