@@ -11,7 +11,7 @@ class ModelAccount(Base):
     name = Column('name', String(30), nullable=True, doc="Name of the person.")
     password = Column('password', String(100), nullable=False, doc="Password of the account.")
     email = Column('email', String(60), doc="Email of the account.")
-    avatar = Column('avatar', String(40), doc="dir of image avatar")
-    keepOpen = Column('keepOpen', Boolean, default=False, doc="get in without write user and password")
+    profile_img = Column('profile_img', String(50), doc="dir of image profile")
+    keepOpen = Column('keepOpen', Boolean, default=False, doc="log in without write user and password")
     current = Column('current', Boolean, default = True, doc=" if the current account")
 

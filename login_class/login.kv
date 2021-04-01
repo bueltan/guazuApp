@@ -79,7 +79,7 @@
                             MDCheckbox:
                                 id: ck_keepOpen
                                 pos_hint: {'center_x': 0, 'center_y': 1}
-
+                                on_active: root.on_checkbox_active(*args)
                                 size_hint: None, None
                                 size: "28sp", "28sp"
                                 active: False

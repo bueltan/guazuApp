@@ -1,4 +1,6 @@
 import base64
+import logging
+from datetime import datetime
 import re
 import shutil
 
@@ -90,4 +92,34 @@ def save_dir_in_db(dir, table):
 def copy(src_file, dest_file):
     shutil.copy2(src_file, dest_file, follow_symlinks=True)
 
-print (get_height_img(150, 95, 50))
+
+class TimeFormat(object):
+
+    def __init__(self, timestamp):
+        self.timestamp = timestamp
+        self.day_week = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        self.dias_semanas = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom']
+
+    def date_with_days_es(self):
+        try:
+            dt_object = datetime.fromtimestamp(self.timestamp)
+            str_time = dt_object.strftime(" %a %d %H:%M ")
+
+            for index, day in enumerate(self.day_week):
+                if day in str_time:
+                    str_time = str_time.replace(day, self.dias_semanas[index])
+                    break
+        except Exception as error:
+            logging.error(f"Error in time_am_pm {error} ")
+            str_time = 'time_error'
+        return str_time
+
+    def time_am_pm(self):
+        try:
+            dt_object = datetime.fromtimestamp(self.timestamp)
+            str_time = dt_object.strftime("%H:%M %p")
+        except Exception as error:
+            logging.error(f"Error in time_am_pm {error} ")
+            str_time = 'time_error'
+        return str_time
+

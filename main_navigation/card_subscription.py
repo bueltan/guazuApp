@@ -5,11 +5,12 @@ from main_navigation.conversations_tks import ConversationTks
 class CardSubscription(MDCard):
     """CardSubscription """
 
-    def __init__(self, **kwargs):
+    def __init__(self, MainClass ,**kwargs):
         super(CardSubscription, self).__init__()
         self.subscription = kwargs.get('subscription')
         self.account = kwargs.get('account')
         self.id = self.subscription.id
+        self.main_class = MainClass
         self.Conversations_tks = ConversationTks(self)
         self.update_data_card(source=self.subscription.source, name_account=self.account.name)
         self.Conversations_tks.mutate_list_tickets()

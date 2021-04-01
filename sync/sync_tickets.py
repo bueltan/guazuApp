@@ -23,7 +23,7 @@ class SyncTickets(object):
 
     def update_list_objects_tks(self, model_tks):
         if self.main_class:
-            lists_instance_class_subs = self.main_class.mainNavigation.list_card_sub
+            lists_instance_class_subs = self.main_class.class_main_navigation.list_card_sub
             for instance_card_sub in lists_instance_class_subs:
                 if instance_card_sub.id == self.subscription_id:
                     list_dict_tks = instance_card_sub.Conversations_tks.build_list_data_tks(model_tks)
@@ -38,22 +38,33 @@ class SyncTickets(object):
             tickets = results['get_tickets']['edges']
             for ticket in tickets:
                 ticket = ticket['node']
+                ticket['read'] = False
                 ticket['subscription_id'] = self.subscription_id
                 if self.timestamp == 0:
                     messages = ticket.pop('listMessage')
-                self.model_tks = ModelTickets(**ticket)
-                self.session.merge(self.model_tks)
+                    self.model_tks = ModelTickets(**ticket)
+                    self.session.merge(self.model_tks)
+                    list_objects_tks.append(self.model_tks)
 
-                if self.timestamp == 0:
                     messages = messages['edges']
                     for message in messages:
                         message = message['node']
                         model_msgs = ModelMessages(**message)
                         self.session.merge(model_msgs)
-                self.session.commit()
-                list_objects_tks.append(self.model_tks)
+                        self.session.commit()
+                else:
+                    ticket_from_db = ModelTickets.query.filter_by(id=ticket['id'],
+                                                                  last_id_msg=ticket['last_id_msg']).first()
+                    if not ticket_from_db:
+                        self.model_tks = ModelTickets(**ticket)
+                        self.session.merge(self.model_tks)
+                        list_objects_tks.append(self.model_tks)
+                        self.session.commit()
 
-            self.update_list_objects_tks(list_objects_tks)
+
+            if list_objects_tks:
+                self.update_list_objects_tks(list_objects_tks)
+
             return list_objects_tks
 
 

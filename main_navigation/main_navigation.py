@@ -1,5 +1,6 @@
 """ MainNavigation """
-from kivymd.uix.navigationdrawer import MDNavigationLayout
+from kivymd.uix.boxlayout import MDBoxLayout
+
 from assets.eval_func_speed import runtime_log
 from general_functions import functions
 from main_navigation.card_subscription import CardSubscription
@@ -8,12 +9,13 @@ import logging
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 
-class MainNavigation(MDNavigationLayout):
+class MainNavigation(MDBoxLayout):
     """ MainNavigation """
-    def __init__(self, **kwargs):
+    def __init__(self, MainClass, **kwargs):
         super(MainNavigation, self).__init__()
         logging.info("MainNavigation")
         self.list_card_sub = []
+        self.main_class = MainClass
 
     @runtime_log
     def load_subscriptions_from_db(self, account=None):
@@ -26,7 +28,7 @@ class MainNavigation(MDNavigationLayout):
 
     def build_card_subscription(self, **kwargs):
         """ subscription and account object required"""
-        card_sub = CardSubscription(**kwargs)
+        card_sub = CardSubscription(self.main_class, **kwargs)
         self.list_card_sub.append(card_sub)
         self.container.add_widget(card_sub)
 

@@ -1,12 +1,16 @@
 <ItemTickets>:
     source_img : ""
     icon_name : ""
+    color_icon : [1,1,1,1]
+    bg_color: app.theme_cls.bg_light
+    on_release: root.open_chat()
+
     AsyncImageLeftWidget:
         source: root.source_img
     IconRightWidget:
         icon: root.icon_name
         theme_text_color:"Custom"
-        text_color: [1,.8,0,1]
+        text_color: root.color_icon
         on_release: print("hello")
 
 <CardSubscription>:
@@ -17,6 +21,12 @@
     orientation: "vertical"
     padding: "1sp"
     size_hint: 1, 1
+    canvas.before:
+        Color:
+            rgba: app.theme_cls.bg_dark
+        Rectangle:
+            size: self.size
+            pos: self.pos
 
     BoxLayout:
         orientation: "vertical"

@@ -1,17 +1,16 @@
 import time
+
 import backoff
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
-from assets.eval_func_speed import runtime_log
 from connection_endpoint import variables
-from sync_data.sync_subscriptions import SyncSubscriptions
-from sync_data.sync_tickets import SyncTickets
+from sync.sync_subscriptions import SyncSubscriptions
+from sync.sync_tickets import SyncTickets
 from database import base
 
-from sync_data.sync_messages import SyncMessages
+from sync.sync_messages import SyncMessages
 import asyncio
 import logging
-
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 
@@ -19,8 +18,6 @@ class SyncData(object):
     def __init__(self, MainClass):
         self.sessionSQL = base.Session()
         self.work_queue = asyncio.Queue()
-        transport = AIOHTTPTransport(url=variables.base_url_http, headers=variables.headers, timeout=100)
-        self.client = Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=100)
         self.account_id = None
         self.main_class = MainClass
 
@@ -37,17 +34,23 @@ class SyncData(object):
         logging.info('producer %s', payload)
         await self.work_queue.put(payload)
 
-    def error(error):
-        logging.error(str(error))
+    def give_up_exception(ext):
+        if 'Not Authorization' in str(ext):
+            logging.warning(f" In backoff sync_data {str(ext)}")
+        else:
+            logging.error(f" In backoff sync_data {str(ext)}")
 
-    @backoff.on_exception(backoff.expo, Exception, max_tries= 10, giveup=error)
+    @backoff.on_exception(backoff.expo, Exception, max_tries= None, giveup=give_up_exception)
     async def execute(self):
 
-        async with self.client as session:
+        transport = AIOHTTPTransport(url=variables.base_url_http, headers=variables.headers, timeout=100)
+        client = Client(transport=transport, fetch_schema_from_transport=False, execute_timeout=100)
+        if not  'Authorization' in variables.headers:
+            raise Exception('Not Authorization, waiting validation')
+        async with client as session:
             payload = await self.work_queue.get()
             spread_sync = payload['spread_sync'] - 1
             logging.info("to execute parameters %s and query %s", payload['parameters'], payload['query'])
-
             result = await session.execute(payload['query'], variable_values=payload['parameters'])
 
             """ Result subscribe Sync subscriptions """
@@ -55,7 +58,7 @@ class SyncData(object):
             if payload['function'] == 'sync_subscriptions':
                 account = payload['account']
                 list_obj_subscriptions = await SyncSubscriptions(MainClass=self.main_class, account_obj=account,
-                                                           session=self.sessionSQL).success(result)
+                                                                 session=self.sessionSQL).success(result)
 
                 logging.info('sync_subscriptions %s', list_obj_subscriptions)
                 if spread_sync >= 0:
@@ -68,7 +71,7 @@ class SyncData(object):
             """ Result subscribe Sync tickets """
 
             if payload['function'] == 'sync_tickets':
-                logging.info("Result subscribe Sync tickets¿'")
+                logging.info("Result subscribe Sync tickets'")
                 id_subscription = payload['id_subscriptions']
                 current_time = int(time.time())
 
@@ -79,10 +82,9 @@ class SyncData(object):
                                                    MainClass=self.main_class,
                                                    timestamp=payload['timestamp'],
                                                    session=self.sessionSQL).success(result)
-                    logging.info("323232323-update_timestamp_sync_subs")
 
                     if spread_sync >= 0:
-                        logging.info("1111111SyncSubscriptions-update_timestamp_sync_subs")
+                        logging.info("SyncSubscriptions-update_timestamp_sync_subs")
 
                         logging.info("Result subscribe Sync tickets spread_sync >= 0 get messages tk a tk %s",
                                      payload['timestamp'])
@@ -97,13 +99,11 @@ class SyncData(object):
                             update_timestamp_sync_subs(current_time, id_subscription)
                         self.sessionSQL.commit()
                     else:
-                        logging.info("323232323-update_timestamp_sync_subs")
                         logging.info("SyncSubscriptions-update_timestamp_sync_subs")
                         SyncSubscriptions(account_id=self.account_id, session=self.sessionSQL). \
                             update_timestamp_sync_subs(current_time, id_subscription)
                         self.sessionSQL.commit()
                         self.sessionSQL.close()
-
 
                 else:
                     logging.info("SyncSubscriptions-update_timestamp_sync_subs")
@@ -132,9 +132,7 @@ class SyncData(object):
         self.account_id = account.id
         logging.info("Sync Subscription Build Query, spread_sync: %s", spread_sync)
         query = gql(""" 
-                query ($id_account: ID! ){subscription_list (id_account:$id_account)
-                           {edges {node {id source id_account}}}}
-                   """)
+                query ($id_account: ID! ){subscription_list(id_account:$id_account){edges {node {id source id_account}}}}""")
 
         parameters = {'id_account': self.account_id}
         function = 'sync_subscriptions'
@@ -155,7 +153,7 @@ class SyncData(object):
                                           listMessage{edges{node{ 
                                           id tickets_id type text fromMe 
                                           mime url caption filename payload 
-                                          vcardList timestamp  }}}}}}}
+                                          vcardList timestamp user_sent user_received }}}}}}}
                           """)
             spread_sync = 0
 
@@ -164,7 +162,8 @@ class SyncData(object):
                       query ($id_subscription:ID! $timestamp:String!)
                       {get_tickets(id_subscription: $id_subscription timestamp: $timestamp)
                                           {edges{ node {id, user_id, channel_id, node2, node3,
-                                          node4, name, timestamp, image, phone, last_id_msg}}}}
+                                          node4, name, timestamp, image, phone, last_id_msg 
+                                          }}}}
                           """)
 
         parameters = {'id_subscription': id_subscription, 'timestamp': timestamp}
@@ -186,7 +185,7 @@ class SyncData(object):
                                                                                timestamp:$timestamp)
                        {edges{node {id tickets_id type text fromMe 
                                              mime url caption filename payload 
-                                             vcardList timestamp} } } }
+                                             vcardList timestamp  user_sent user_received } } } }
                        """)
 
         parameters = {'id_ticket': id_ticket, 'timestamp': timestamp}
@@ -194,5 +193,21 @@ class SyncData(object):
         function = 'sync_messages'
         await self.graphql_connection(function=function, query=query,
                                       parameters=parameters, timestamp=timestamp,
+                                      id_ticket=id_ticket, spread_sync=spread_sync,
+                                      id_subscription=id_subscription)
+
+    async def sync_sent_messages_pending(self, id_ticket=None, timestamp_queue=0, spread_sync=0, id_subscription=None):
+
+        logging.info(f"sync_sent_messages_pending {id_ticket}, timestamp{timestamp_queue}:")
+
+        query = gql(""" 
+                       
+                       """)
+
+        parameters = {'id_ticket': id_ticket, 'timestamp_queue': timestamp_queue}
+
+        function = 'sync_messages'
+        await self.graphql_connection(function=function, query=query,
+                                      parameters=parameters, timestamp=timestamp_queue,
                                       id_ticket=id_ticket, spread_sync=spread_sync,
                                       id_subscription=id_subscription)

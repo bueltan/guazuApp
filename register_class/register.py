@@ -35,18 +35,22 @@ class Register(MDBoxLayout):
             self.task_create_account = asyncio.create_task(self.create_account(name, user, password, email))
 
     def fatal_code(e):
-        print("fatal_code_register",e)
+        print("fatal_code_register", e)
         str_error = str(e)
+
         if 'Duplicate entry' in str_error:
             error_msg = "Duplicate entry"
-            return 400
-            if "for key 'id_name'" in str_error:
-                error_msg = "Nombre de cuenta en uso."
-                return 400
-            if "for key 'email'" in str_error:
-                error_msg = "Email ya registrado."
-                return 400
             Snackbar(text=error_msg, padding="20dp").open()
+            return 400
+        if "for key 'id_name'" in str_error:
+            error_msg = "Nombre de cuenta en uso."
+            Snackbar(text=error_msg, padding="20dp").open()
+            return 400
+        if "for key 'email'" in str_error:
+            error_msg = "Email ya registrado."
+            Snackbar(text=error_msg, padding="20dp").open()
+            return 400
+
         if 'Temporary failure in name resolution' in str(e):
             Snackbar(text="Se ha perdido connexion con internet, reintentando...", padding="20dp").open()
 
@@ -192,12 +196,14 @@ class Register(MDBoxLayout):
             print("create_account")
             self.create_task_account(name, user, password, email)
         else:
-            if A is False: Snackbar(text="Nombre de cuenta no valido", padding="20dp").open()
-            if B is False or D is False: Snackbar(text="Contraseña no valida", padding="20dp").open()
-            if C is False: Snackbar(text="Email invalido", padding="20dp").open()
-            if E is False: Snackbar(text="El campo nombre es requerido", padding="20dp").open()
+            if A is False:
+                Snackbar(text="Nombre de cuenta no valido", padding="20dp").open()
+            if B is False or D is False:
+                Snackbar(text="Contraseña no valida", padding="20dp").open()
+            if C is False:
+                Snackbar(text="Email invalido", padding="20dp").open()
+            if E is False:
+                Snackbar(text="El campo nombre es requerido", padding="20dp").open()
 
     def go_to_login(self):
         self.mainwid.goto_login()
-
-
