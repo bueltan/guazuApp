@@ -6,6 +6,7 @@ from kivy.base import EventLoop
 from kivy.core.audio import SoundLoader
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivymd.font_definitions import theme_font_styles
+from pythonosc.udp_client import SimpleUDPClient
 from path import assets_fonts
 from sync.sync_data import SyncData
 from update_Interface import UpdateInterface
@@ -13,10 +14,9 @@ from login_class.login import Login
 from register_class.register import Register
 from main_navigation.main_navigation import MainNavigation
 from main_navigation.conversations_messages import MessagesScreen
-
-
-logger = logging.getLogger('my-logger')
-logger.propagate = False
+from pythonosc.osc_server import AsyncIOOSCUDPServer
+from pythonosc.dispatcher import Dispatcher
+from typing import List, Any
 
 
 class GuazuApp(ScreenManager):
@@ -34,6 +34,23 @@ class GuazuApp(ScreenManager):
         self.goto_login()
         self.class_register = None
         self.class_screen_messages = None
+        self.dispatcher = Dispatcher()
+        self.dispatcher.map("/filter_interface*", self.filter_handler)
+        self.client = SimpleUDPClient("127.0.0.1", 8544)  # Create client
+        self.class_update_interface = UpdateInterface()
+
+    def filter_handler(self, address: str,  *args: List[Any]) -> None:
+        method = address.split("/")[2]
+        print("method: ", method)
+        if method == 'notifications':
+            print(method, args)
+        if method == 'update_interface':
+            print(method, args)
+
+    async def init_main(self):
+        logging.info("Star server osc")
+        server = AsyncIOOSCUDPServer(("127.0.0.1", 8542), self.dispatcher, asyncio.get_event_loop())
+        await server.create_serve_endpoint()  # Create datagram endpoint and start serving
 
     def hook_keyboard(self, window, key, *largs):
         if key == 27:
@@ -70,6 +87,13 @@ class GuazuApp(ScreenManager):
 
         self.current = 'RegisterScreen'
 
+    def update_interfaces(self, id_tk=None, messages=None, is_callback=False, subscription_id = None):
+        if not is_callback:
+            self.class_update_interface.mutate_ticket(model_msgs=messages, subscription_id= subscription_id, ticket_id=id_tk)
+
+        self.class_update_interface.update_current(subscription_id= subscription_id,
+                                                                  id_tk_encode=id_tk, message_obj=messages)
+
     def playsound(self, effect=None):
         if effect == 'new_message_from_me':
             sound = SoundLoader.load('assets/done-for-you-cut.wav')
@@ -80,7 +104,7 @@ class GuazuApp(ScreenManager):
 
     async def goto_main_navigation(self, **kwargs):
         logging.debug("goto_main_navigation")
-        self.class_update_interface = UpdateInterface(self)
+
         self.class_sync_data = SyncData(self)
         self.class_main_navigation = MainNavigation(self)
 
@@ -99,6 +123,8 @@ class GuazuApp(ScreenManager):
             wid = Screen(name='MessagesScreen')
             wid.add_widget(self.class_screen_messages)
             self.add_widget(wid)
+
+        await self.init_main()
 
     async def check_connection(self):
         if not self.checking:
@@ -144,6 +170,7 @@ class MainApp(MDApp):
 
     def on_start(self):
         self.fps_monitor_start()
+
         return True
 
     def on_stop(self):

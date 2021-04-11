@@ -28,3 +28,4 @@ class ModelMessages(Base):
 
     user_received = Column('user_received', String(30), doc=" user_received.")
     user_sent = Column('user_sent', String(30), doc=" user_sent.")
+
