@@ -1,5 +1,4 @@
 from kivymd.uix.snackbar import Snackbar
-from assets.eval_func_speed import runtime_log
 from database.model_tickets import ModelTickets
 from database.model_messages import ModelMessages
 import logging
@@ -29,7 +28,6 @@ class SyncTickets(object):
                     list_dict_tks = instance_card_sub.Conversations_tks.build_list_data_tks(model_tks)
                     instance_card_sub.Conversations_tks.mutate_list_tickets(list_dict_tks)
 
-    @runtime_log
     def success(self, results=None):
         results = results
         if 'errors' in results:
@@ -49,6 +47,7 @@ class SyncTickets(object):
                     messages = messages['edges']
                     for message in messages:
                         message = message['node']
+                        message['success'] = True
                         model_msgs = ModelMessages(**message)
                         self.session.merge(model_msgs)
                         self.session.commit()

@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 import re
 import shutil
+from functools import lru_cache
 
 
 def get_nodes(subscription):
@@ -99,7 +100,7 @@ class TimeFormat(object):
         self.timestamp = timestamp
         self.day_week = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         self.dias_semanas = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom']
-
+    @lru_cache
     def date_with_days_es(self):
         try:
             dt_object = datetime.fromtimestamp(self.timestamp)
@@ -113,7 +114,7 @@ class TimeFormat(object):
             logging.error(f"Error in time_am_pm {error} ")
             str_time = 'time_error'
         return str_time
-
+    @lru_cache
     def time_am_pm(self):
         try:
             dt_object = datetime.fromtimestamp(self.timestamp)

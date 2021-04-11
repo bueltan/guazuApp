@@ -1,7 +1,5 @@
 """ MainNavigation """
 from kivymd.uix.boxlayout import MDBoxLayout
-
-from assets.eval_func_speed import runtime_log
 from general_functions import functions
 from main_navigation.card_subscription import CardSubscription
 from database.model_subscription import ModelSubscriptions
@@ -17,7 +15,6 @@ class MainNavigation(MDBoxLayout):
         self.list_card_sub = []
         self.main_class = MainClass
 
-    @runtime_log
     def load_subscriptions_from_db(self, account=None):
         logging.info("load_subscriptions_from_db Account: %s", account)
         if account:

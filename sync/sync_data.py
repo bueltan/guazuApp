@@ -1,13 +1,13 @@
 import time
-
 import backoff
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 from connection_endpoint import variables
+from database.model_message_temp import ModelMessagesTemp
+from general_functions import functions
 from sync.sync_subscriptions import SyncSubscriptions
 from sync.sync_tickets import SyncTickets
 from database import base
-
 from sync.sync_messages import SyncMessages
 import asyncio
 import logging
@@ -24,8 +24,8 @@ class SyncData(object):
     async def graphql_connection(self, **kwargs):
         logging.info("graphql_connection %s", kwargs)
         task_producer = [asyncio.create_task(self.producer(**kwargs))]
-        asyncio.gather(*task_producer, return_exceptions=True)
         asyncio.create_task(self.execute())
+        await asyncio.gather(*task_producer, return_exceptions=True)
 
     async def producer(self, **kwargs):
         payload = {}
@@ -42,14 +42,16 @@ class SyncData(object):
 
     @backoff.on_exception(backoff.expo, Exception, max_tries= None, giveup=give_up_exception)
     async def execute(self):
-
         transport = AIOHTTPTransport(url=variables.base_url_http, headers=variables.headers, timeout=100)
         client = Client(transport=transport, fetch_schema_from_transport=False, execute_timeout=100)
-        if not  'Authorization' in variables.headers:
+
+        if not 'Authorization' in variables.headers:
             raise Exception('Not Authorization, waiting validation')
         async with client as session:
             payload = await self.work_queue.get()
+
             spread_sync = payload['spread_sync'] - 1
+
             logging.info("to execute parameters %s and query %s", payload['parameters'], payload['query'])
             result = await session.execute(payload['query'], variable_values=payload['parameters'])
 
@@ -125,6 +127,17 @@ class SyncData(object):
                 if spread_sync >= 0:
                     logging.info("Result subscribe Sync messages, download Multimedia msg")
 
+            if payload['function'] == 'sync_messages_pending':
+
+                logging.info("function, sync_messages_pending")
+                id_message_temp = payload['id_message_temp']
+                try:
+                    if id_message_temp:
+                        ModelMessagesTemp.query.filter(ModelMessagesTemp.id == id_message_temp).delete()
+                        self.self.sessionSQL.commit()
+                except Exception as e:
+                    logging.exception(f"delete_temp_message {e}")
+
         self.work_queue.task_done()
         """" Sync Subscription """
 
@@ -132,7 +145,8 @@ class SyncData(object):
         self.account_id = account.id
         logging.info("Sync Subscription Build Query, spread_sync: %s", spread_sync)
         query = gql(""" 
-                query ($id_account: ID! ){subscription_list(id_account:$id_account){edges {node {id source id_account}}}}""")
+                query ($id_account: ID! ){subscription_list(id_account:$id_account)
+                {edges {node {id source id_account}}}}""")
 
         parameters = {'id_account': self.account_id}
         function = 'sync_subscriptions'
@@ -141,7 +155,7 @@ class SyncData(object):
 
     """" Sync Tickets """
 
-    async def sync_tickets(self, spread_sync, id_subscription=None, timestamp=0):
+    async def sync_tickets(self, spread_sync=1, id_subscription=None, timestamp=0):
         logging.info("Sync Tickets Build Query, timestamp: %s", timestamp)
         timestamp = timestamp
         if timestamp == 0:
@@ -174,6 +188,8 @@ class SyncData(object):
                                       parameters=parameters, timestamp=timestamp,
                                       id_subscriptions=id_subscription, spread_sync=spread_sync)
 
+        await self.sync_sent_messages_pending(id_subscription=id_subscription)
+
     """" Sync Messages """
 
     async def sync_messages(self, id_ticket=None, timestamp=0, spread_sync=0, id_subscription=None):
@@ -196,18 +212,65 @@ class SyncData(object):
                                       id_ticket=id_ticket, spread_sync=spread_sync,
                                       id_subscription=id_subscription)
 
-    async def sync_sent_messages_pending(self, id_ticket=None, timestamp_queue=0, spread_sync=0, id_subscription=None):
+    async def sync_sent_messages_pending(self, id_subscription=None):
 
-        logging.info(f"sync_sent_messages_pending {id_ticket}, timestamp{timestamp_queue}:")
+        logging.info(f"sync_sent_messages_pending, id_subscription: {id_subscription}:")
 
-        query = gql(""" 
-                       
-                       """)
+        message_to_sent = ModelMessagesTemp.query.filter((ModelMessagesTemp.subscription_id == id_subscription) &
+                                                         (ModelMessagesTemp.timestamp != None))
+        query = gql(
+            """
+                mutation ($id_account: ID!, $id_subscription: ID!,
+                          $id_ticket: ID, $id_bubble: String! , $node4: String!,
+                          $type: String!, $text:String, $url: String, 
+                          $mime: String, $caption: String, $filename: String,
+                          $vcardList: String, $payload:String ) 
+                {CreateMessage(
+                    id_account:$id_account
+                    id_subscription:$id_subscription
+                    id_bubble: $id_bubble
+                    ticket_data: { node4: $node4
+                                   id: $id_ticket
+                                    }
+                    message_data: {
+                    type: $type
+                    text: $text
+                    url: $url
+                    mime: $mime
+                    caption: $caption
+                    filename: $filename
+                    vcardList: $vcardList
+                    payload: $payload
+                    }) 
+                    {
+                    message {
+                      id
+                    }
+                  }
+                }
+            """)
 
-        parameters = {'id_ticket': id_ticket, 'timestamp_queue': timestamp_queue}
+        for message in message_to_sent:
 
-        function = 'sync_messages'
-        await self.graphql_connection(function=function, query=query,
-                                      parameters=parameters, timestamp=timestamp_queue,
-                                      id_ticket=id_ticket, spread_sync=spread_sync,
-                                      id_subscription=id_subscription)
+            message_params = {'type': message.type,
+                              'text': message.text,
+                              'url': message.url,
+                              'mime': message.mime,
+                              'caption': message.caption,
+                              'filename': message.filename,
+                              'vcardList': message.vcardList,
+                              'payload': message.payload}
+            id_ticket = functions.encode('Tickets:' + message.tickets_id)
+            id_bubble = functions.encode('Message:' + message.id)
+
+            parameters = {'id_account': self.account_id, 'id_subscription': id_subscription,
+                          'id_ticket': id_ticket, 'id_bubble': id_bubble, 'node4': message.user_received}
+
+            print("parameters", parameters)
+            parameters.update(message_params)
+
+            logging.warning(f"message temp: {parameters}")
+            function = 'sync_messages_pending'
+
+            await self.graphql_connection(function=function, query=query,
+                                          parameters=parameters, id_message_temp=message.id, spread_sync=1)

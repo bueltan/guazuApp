@@ -2,7 +2,6 @@ import asyncio
 import base64
 import hashlib
 import logging
-
 import backoff as backoff
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
@@ -24,10 +23,11 @@ class Register(MDBoxLayout):
         self.email.bind(focus=self.on_focus)
         self.session = base.Session()
         self.task_create_account = None
+        self.account = None
+        self.password_from_field = None
 
     def create_task_account(self, name, user, password, email):
         logging.info(f"create_task_account, name: {name}, user: {user}, password: {password}, email:{email}" )
-
         if self.task_create_account == None:
             self.task_create_account = asyncio.create_task(self.create_account(name, user, password, email))
         else:
@@ -35,11 +35,9 @@ class Register(MDBoxLayout):
             self.task_create_account = asyncio.create_task(self.create_account(name, user, password, email))
 
     def fatal_code(e):
-        print("fatal_code_register", e)
         str_error = str(e)
-
         if 'Duplicate entry' in str_error:
-            error_msg = "Duplicate entry"
+            error_msg = "Ya se encuentra una cuenta con el mismo email o nombre de usuario"
             Snackbar(text=error_msg, padding="20dp").open()
             return 400
         if "for key 'id_name'" in str_error:
@@ -50,9 +48,11 @@ class Register(MDBoxLayout):
             error_msg = "Email ya registrado."
             Snackbar(text=error_msg, padding="20dp").open()
             return 400
-
         if 'Temporary failure in name resolution' in str(e):
             Snackbar(text="Se ha perdido connexion con internet, reintentando...", padding="20dp").open()
+        else:
+            logging.error(e)
+            return 400
 
     @backoff.on_exception(backoff.expo, Exception, max_time=300, giveup=fatal_code)
     async def create_account(self, name, user, password, email):
@@ -71,7 +71,7 @@ class Register(MDBoxLayout):
                                               {name id_name email id code created edited password }}}
                                             '''
             )
-            params = {'name': name, 'id_name':user, 'password': password, 'email': email}
+            params = {'name': name, 'id_name': user, 'password': password, 'email': email}
 
             result = await session.execute(query, variable_values=params)
             self.success(result)
@@ -81,27 +81,34 @@ class Register(MDBoxLayout):
         if 'errors' in results:
             Snackbar(text=results['errors'][0]['message'], padding="20dp").open()
         else:
-            print(results)
-            account = ModelAccount()
-            account.id = results['createAccount']['account']['id']
-            account.name = results['createAccount']['account']['name']
-            account.id_name = results['createAccount']['account']['id_name']
-            account.email = results['createAccount']['account']['email']
-            account.keepOpen = True
-            account.password = base64.b85encode(self.password.text.encode("utf-8"))
-            self.update_account(account)
-            self.go_to_login()
 
-    def update_account(self, data):
+            id = results['createAccount']['account']['id']
+            name = results['createAccount']['account']['name']
+            id_name = results['createAccount']['account']['id_name']
+            email = results['createAccount']['account']['email']
+            new_account = {'id': id, 'name': name, 'id_name': id_name,
+                           'email': email, 'keepOpen': True, 'password': self.password_from_field}
+            self.update_accounts_in_db(new_account)
+            self.login()
+
+    def update_accounts_in_db(self, new_account=None):
+        password = new_account['password']
+        password_encode = base64.b85encode(password.encode("utf-8"))
+        logging.info(f"save account in db {new_account}")
+
         accounts = self.session.query(ModelAccount)
         try:
             if accounts[0]:
-                for account in accounts:
-                    account.current = 0
-                    self.session.merge(account)
-        except:
-            pass
-        self.session.merge(data)
+                for a in accounts:
+                    a.current = 0
+                    self.session.merge(a)
+        except Exception as e:
+            logging.error(f"update_accounts_in_db: {e} ")
+
+        new_account['password'] = password_encode
+        self.account = ModelAccount(**new_account)
+        self.session.merge(self.account)
+        self.account.password = password
         self.session.commit()
         self.session.close()
 
@@ -136,7 +143,6 @@ class Register(MDBoxLayout):
             Snackbar(text="Nombre de cuenta entre 5 y 15 caracteres ", padding="20dp").open()
             return False
 
-
         return True
 
     def check_pass1(self):
@@ -150,6 +156,7 @@ class Register(MDBoxLayout):
 
     def check_pass2(self):
         passwordSecond = self.second_password.text
+
         if passwordSecond != self.password.text:
             Snackbar(text="Las contraseñas no coinciden", padding="20dp").open()
             pass2_check = False
@@ -193,8 +200,8 @@ class Register(MDBoxLayout):
         E = self.check_name()
 
         if E is True and A is True and B is True and C is True and D is True:
-            print("create_account")
-            self.create_task_account(name, user, password, email)
+            self.password_from_field = password
+            self.create_task_account(name, user, self.password_from_field, email)
         else:
             if A is False:
                 Snackbar(text="Nombre de cuenta no valido", padding="20dp").open()
@@ -205,5 +212,9 @@ class Register(MDBoxLayout):
             if E is False:
                 Snackbar(text="El campo nombre es requerido", padding="20dp").open()
 
-    def go_to_login(self):
-        self.mainwid.goto_login()
+    def login(self):
+        logging.info("GO IN !")
+        self.mainwid.class_login.go_in(self.account)
+
+    def back_to_login(self):
+        self.mainwid.login_screen()

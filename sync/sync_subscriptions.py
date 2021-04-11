@@ -1,5 +1,4 @@
 from kivymd.uix.snackbar import Snackbar
-from assets.eval_func_speed import runtime_log
 from database.model_subscription import ModelSubscriptions
 import logging
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
@@ -28,7 +27,6 @@ class SyncSubscriptions(object):
             self.main_class.class_main_navigation.build_card_subscription(account=self.account_obj, subscription=self.model_sub)
 
 
-    @runtime_log
     async def success(self, results=None):
         list_object_subscription = []
         logging.info("Result success  SyncSubscriptions %s", results)

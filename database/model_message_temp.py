@@ -6,7 +6,7 @@ class ModelMessagesTemp(Base):
     """MessagesTemp model."""
 
     __tablename__ = 'MessagesTemp'
-    id = Column('id', Integer, primary_key=True, doc="Id of the MessageSent.")
+    id = Column('id', String(40), primary_key=True, doc="Id of the MessageSent.")
     subscription_id = Column('subscription_id', String(40))
     tickets_id = Column('tickets_id', String(40), doc="Id of the Tickets")
     user_received = Column('user_received', String(30), doc=" user_received.")

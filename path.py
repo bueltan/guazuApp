@@ -9,7 +9,6 @@ os.environ["KIVY_PROFILE_LANG"] = "1"
 
 if getattr(sys, "frozen", False):  # bundle mode with PyInstaller
     os.environ["ENTITY_CLIENT_ROOT"] = sys._MEIPASS
-
 else:
     sys.path.append(os.path.abspath(__file__).split("client_entity")[0])
     os.environ["ENTITY_CLIENT_ROOT"] = str(Path(__file__).parent)

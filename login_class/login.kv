@@ -1,19 +1,6 @@
-#:set primary_color (94/255, 53/255, 177/255, 1)
-<ReplicableTextField@CommonTextField>:
-
-<CommonTextField@MDTextField>:
-    size_hint: 0.75, 0.1
-    multiline: False
-    required: True
-    max_text_length: 32
-    line_color_normal: primary_color
-    color_mode: 'custom'
-    line_color_focus: primary_color
-
 <Login>:
     user_input: user_input
     password_input: password_input
-    keepOpen: keepOpen
     ck_keepOpen:ck_keepOpen
     newPass:newPass
     BoxLayout:
@@ -42,12 +29,10 @@
                 size_hint_x: .95
                 size_hint_min_x: 250
                 size_hint_min_y: 450
-                size_hint_max_x: 525
-                size_hint_max_y: 500
+                size_hint_max_x: 1000
+                size_hint_max_y: 900
                 spacing: 30
-                MDCard:
-                    padding:20
-                    elevation: 0
+                BoxLayout:
                     BoxLayout:
                         orientation:'vertical'
                         padding: 10
@@ -63,10 +48,16 @@
                         MDTextField:
                             size_hint_x: 1
                             id: user_input
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.opposite_bg_normal
+                            hint_text: "color_mode = 'custom'"
+                            line_color_focus: app.theme_cls.primary_color
                             write_tab: False
                             hint_text: "Cuenta o email"
                         MDTextField:
                             size_hint_x: 1
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.opposite_bg_normal
                             id: password_input
                             write_tab: False
                             hint_text: "Contraseña"
@@ -85,12 +76,12 @@
                                 active: False
                             MDTextButton:
                                 pos_hint: {'center_x': 0, 'center_y': 1}
-                                id: keepOpen
                                 text: "Auto inicio"
+                                on_release: root.change_ck()
                         MDRaisedButton:
                             text: 'Ingresar'
                             size_hint_x : 1
-                            on_press: root.go_in()
+                            on_press: root.validate_local()
                         MDTextButton:
                             id: newPass
                             text: "¿ Olvidaste tu contraseña ?"

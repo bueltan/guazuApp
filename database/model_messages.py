@@ -8,6 +8,7 @@ class ModelMessages(Base):
     __tablename__ = 'Messages'
     id = Column('id', String(80), primary_key=True, doc="Id of the MessageSent.")
     tickets_id = Column('tickets_id', ForeignKey('Tickets.id'), doc="Id of the Tickets")
+    id_bubble = Column('id_bubble', String(40), doc="id from temp message")
     type = Column('type', String(15), nullable=False, doc="Type of the message.")
     text = Column('text', String(15000), doc="Text of the massage max len 6000")
     fromMe = Column('fromMe', Boolean, doc="is the message from me.")

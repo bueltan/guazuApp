@@ -33,12 +33,10 @@
                 size_hint_x: 1
                 size_hint_min_x: 250
                 size_hint_min_y: 500
-                size_hint_max_x: 700
-                size_hint_max_y: 700
+                size_hint_max_x: 1000
+                size_hint_max_y: 900
                 spacing: 30
-                MDCard:
-                    elevation: .0
-                    padding:20
+                BoxLayout:
                     BoxLayout:
                         orientation:'vertical'
                         padding: 10
@@ -53,49 +51,71 @@
                             text_color: app.theme_cls.primary_color
 
                         MDTextField:
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.primary_color
                             id: name_input
                             size_hint_x: 1
                             write_tab: False
                             hint_text:'Tú nombre'
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.opposite_bg_normal
 
                         MDTextField:
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.primary_color
                             id: user_input
                             size_hint_x: 1
                             write_tab: False
                             hint_text:'Nombre de cuenta'
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.opposite_bg_normal
 
                         MDTextField:
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.primary_color
                             id: password_input
                             size_hint_x: 1
                             write_tab: False
                             hint_text: "Contraseña"
                             password:True
                             max_text_length: 15
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.opposite_bg_normal
+
                         MDTextField:
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.primary_color
                             id: second_password_input
                             size_hint_x: 1
                             write_tab: False
                             hint_text: "Repetir contraseña"
                             password:True
                             max_text_length: 15
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.opposite_bg_normal
                         MDTextField:
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.primary_color
                             id: email_input
                             size_hint_x: 1
                             write_tab: False
                             hint_text: "Email"
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.opposite_bg_normal
 
                         MDRaisedButton:
                             text: 'Crear cuenta'
                             size_hint_x : 1
                             on_press: root.to_create_account()
-
+                        MDLabel:
+                            text:''
                         MDTextButton:
                             text: 'Inicio'
                             font_name: './assets/fonts/Ubuntu-Medium.ttf'
                             theme_text_color: "Custom"
                             text_color: app.theme_cls.primary_color
                             pos_hint: {'center_x': .5, 'center_y': .5}
-                            on_release:root.go_to_login()
+                            on_release:root.back_to_login()
 
 
 

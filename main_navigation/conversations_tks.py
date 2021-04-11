@@ -1,4 +1,3 @@
-from assets.eval_func_speed import runtime_log
 from database.model_messages import ModelMessages
 from database.model_tickets import ModelTickets
 from general_functions import functions
@@ -24,14 +23,13 @@ class ItemTickets(ThreeLineAvatarIconListItem, AsyncImageLeftWidget):
 
     source_img = StringProperty()
     text = StringProperty()
-    tertiary_font_name = 'UbuntuEmoji'
+    tertiary_font_style = 'UbuntuEmojiStyle'
     secondary_text = StringProperty()
     tertiary_text = StringProperty()
     color_icon = ColorProperty()
     subscription_id = StringProperty()
     user_received = StringProperty()
     user_sent = StringProperty()
-
     icon_name = StringProperty()
     id_tk = StringProperty()
 
@@ -80,7 +78,8 @@ class ConversationTks(object):
 
             dir_default = assets + "/img_profile/default_profile.png"
 
-            for ticket in self.list_objects_tks:
+            def build_dict_data(ticket):
+
                 print("tickets_id", ticket.id)
                 dict_tickets = {'subscription_id': self.subscription_id, 'view_class': 'ItemTickets',
                                 'class_main': self.main_class, 'icon_name': 'bell',
@@ -91,6 +90,24 @@ class ConversationTks(object):
                 logging.info(f"for ticket in self.list_objects_tks: {ticket.id}")
                 if ticket.user_id == self.account_name:
                     """ take node4 for get object contact """
+                    dict_tickets['timestamp'] = ticket.timestamp
+                    dict_tickets['id_tk'] = ticket.id
+                    dict_tickets['user_received'] = ticket.node4
+                    dict_tickets['user_sent'] = ticket.user_id
+                    if ticket.name:
+                        dict_tickets['text'] = ticket.node4
+                    if ticket.image:
+                        dict_tickets['source_img'] = ticket.image
+                    if ticket.read:
+                        dict_tickets['color_icon'] = [0, 0, 0, .3]
+                    if '@c.us' in ticket.user_id:
+                        dict_tickets['secondary_text'] = f"Desde WhatsApp {ticket.phone}"
+                    if '.' == ticket.user_id[0]:
+                        dict_tickets['secondary_text'] = f"Desde GuazuApp {ticket.node2}{ticket.node3}{ticket.node4}"
+
+                    tertiary_text = self.get_tertiary_text(last_id_msg_to_encode=ticket.last_id_msg,
+                                                           timestamp=ticket.timestamp)
+                    dict_tickets['tertiary_text'] = tertiary_text
                 else:
                     dict_tickets['timestamp'] = ticket.timestamp
                     dict_tickets['id_tk'] = ticket.id
@@ -111,13 +128,14 @@ class ConversationTks(object):
                                                            timestamp=ticket.timestamp)
                     dict_tickets['tertiary_text'] = tertiary_text
 
-                self.list_dict_tickets.append(dict_tickets)
-        else:
+                return dict_tickets
+
+            self.list_dict_tickets = [build_dict_data(ticket) for ticket in self.list_objects_tks]
+
             logging.error("list_objects_tks is empty")
 
         return self.list_dict_tickets
 
-    @runtime_log
     def get_tertiary_text(self, last_id_msg_to_encode=None, last_id_msg=None, timestamp=0):
         str_time = functions.TimeFormat(timestamp).date_with_days_es()
 
@@ -132,7 +150,6 @@ class ConversationTks(object):
             return switcher.get(message.type, "nothing")
 
         if last_id_msg_to_encode:
-
             id_message = functions.encode('Message:' + last_id_msg_to_encode)
             logging.info("Id msg encode base64: %s", id_message)
         else:
@@ -168,14 +185,14 @@ class ConversationTks(object):
 
         if self.list_dict_tickets:
 
-            def find_index(list=self.subscription_obj.ids.rv.data, id_tk=None):
+            def find_index(list_data=self.subscription_obj.ids.rv.data, id_tk=None):
                 logging.info(f"try to find_index id_tk: {id_tk}")
                 if id_tk:
-                    for index, tk in enumerate(list):
-                        found = (tk['id_tk'] == id_tk)
-                        if found:
-                            logging.info(f"found id_tk: {id_tk}")
-                            return index
+                    idx = [idx for idx, tk in enumerate(list_data) if tk['id_tk'] == id_tk]
+                    if len(idx) > 0:
+                        return idx[0]
+                        logging.info(f"found id_tk: {id_tk}")
+
                     else:
                         return None
 

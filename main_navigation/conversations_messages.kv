@@ -1,22 +1,32 @@
 
 <MessageTextFrameTx>:
+    theme_text_color: "Custom"
+    text_color: 0, 0, 0, 1
+    markup : True
+    size_hint_y:None
+    halign: 'right'
+    valign: 'middle'
+    padding: 10, 0
+    text_size:self.width-50,None
+    height:self.texture_size[1] +20
     canvas.before:
         Color:
             rgba: app.theme_cls.primary_light
         RoundedRectangle:
             size: [self.size[0]-25, self.size[1]]
             pos:  [ self.pos[0]+25,  self.pos[1]]
-            radius:[15, 0,25, 15]
-    theme_text_color: "Custom"
-    text_color: 0, 0, 0, 1
-    size_hint_y:None
-    halign: 'right'
-    valign: 'middle'
-    padding: 6, 0
-    text_size:self.width-40,None
-    height:self.texture_size[1] +20
+            radius:[15, 0, 15, 15]
 
 <MessageTextFrameRx>:
+    size_hint_y:None
+    halign: 'left'
+    valign: 'middle'
+    markup : True
+    theme_text_color: "Custom"
+    text_color: 1, 1, 1, 1
+    text_size:self.width-50,None
+    padding: 10, 0
+    height:self.texture_size[1] + 20
     canvas.before:
         Color:
             rgba: app.theme_cls.primary_dark
@@ -24,15 +34,6 @@
             size: [self.size[0]-25, self.size[1]]
             pos:  [ self.pos[0],  self.pos[1]]
             radius:[0, 15, 15, 25]
-
-    size_hint_y:None
-    halign: 'left'
-    valign: 'middle'
-    theme_text_color: "Custom"
-    text_color: 1, 1, 1, 1
-    text_size:self.width-40,None
-    padding: 6, 0
-    height:self.texture_size[1] + 20
 
 <MessagesScreen>:
     title : ""
@@ -56,24 +57,23 @@
             orientation:'vertical'
             spacing: 10
             MDBoxLayout:
-
-                RelativeLayout:
-                    RecycleView:
-                        id: rv_messages
-                        key_viewclass: 'view_class'
-                        key_size: 'height'
-                        RecycleBoxLayout:
-                            default_size: None, None
-                            default_size_hint: 1, None
-                            size_hint_y: None
-                            height: self.minimum_height
-                            orientation: 'vertical'
-                            spacing: 5
+                RecycleView:
+                    id: rv_messages
+                    key_viewclass: 'view_class'
+                    key_size: 'height'
+                    RecycleBoxLayout:
+                        default_size: None, None
+                        default_size_hint: 1, None
+                        size_hint_y: None
+                        height: self.minimum_height
+                        orientation: 'vertical'
+                        spacing: 10
+                        padding: 10
             MDBoxLayout:
                 orientation:'horizontal'
                 size_hint_y : .12
-                size_hint_min_y: '100dp'
-                size_hint_max_y: '120dp'
+                size_hint_min_y: '80dp'
+                size_hint_max_y: '100dp'
                 canvas.before:
                     Color:
                         rgba: app.theme_cls.bg_dark
@@ -83,17 +83,16 @@
                 MDIconButton:
                     icon: "shape-plus"
                     user_font_size: "30sp"
-                    on_release: lambda x :print("attach ")
+                    on_release: lambda x :print("attach")
                 MDTextField:
                     id: text_message
-                    max_height: "100dp"
+                    max_height: "80dp"
                     hint_text: "Escribe un mensaje"
                     font_name: "UbuntuEmoji"
                     multiline: True
                     color_mode: 'custom'
                     theme_text_color: "Custom"
                     text_color: app.theme_cls.opposite_bg_normal
-                    on_text:root.save_in_temp_tablet(content=self.text)
                 MDIconButton:
                     icon: "send"
                     user_font_size: "30sp"

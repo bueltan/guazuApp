@@ -1,6 +1,4 @@
-import plyer
 from kivymd.uix.snackbar import Snackbar
-from assets.eval_func_speed import runtime_log
 from database.model_messages import ModelMessages
 import logging
 logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
@@ -17,20 +15,19 @@ class SyncMessages(object):
         self.ticket_id = ticket_id
         self.timestamp = timestamp
         self.session = session
-        self.model_msgs = ModelMessages
         self.subscription_id = id_subscription
         self.main_class = MainClass
 
-    @runtime_log
     def success(self, results=None):
         new_msg = False
-        logging.info("result success messages %s", results)
+        model_msgs = None
         if 'errors' in results:
-            Snackbar(text=results['errors'][0]['message'], padding="20dp").open()
+            logging.error(f"SyncMessage", results)
         else:
             messages = results['list_message']['edges']
             for message in messages:
                 message = message['node']
+                message['success'] = True
                 model_msgs = ModelMessages(**message)
                 check = ModelMessages.query.get(model_msgs.id)
                 if check:
