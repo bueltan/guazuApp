@@ -1,22 +1,32 @@
-import logging
+import ast
 import asyncio
-from kivy.core.text import LabelBase
-from kivymd.app import MDApp
+import logging
+from collections import namedtuple
+from typing import List, Any
+
+from jnius import autoclass
 from kivy.base import EventLoop
 from kivy.core.audio import SoundLoader
+from kivy.core.text import LabelBase
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.utils import platform
+from kivymd.app import MDApp
 from kivymd.font_definitions import theme_font_styles
+from pythonosc.dispatcher import Dispatcher
+from pythonosc.osc_server import AsyncIOOSCUDPServer
 from pythonosc.udp_client import SimpleUDPClient
+from login_class.login import Login
+from main_navigation.conversations_messages import MessagesScreen
+from main_navigation.main_navigation import MainNavigation
 from path import assets_fonts
+from register_class.register import Register
 from sync.sync_data import SyncData
 from update_Interface import UpdateInterface
-from login_class.login import Login
-from register_class.register import Register
-from main_navigation.main_navigation import MainNavigation
-from main_navigation.conversations_messages import MessagesScreen
-from pythonosc.osc_server import AsyncIOOSCUDPServer
-from pythonosc.dispatcher import Dispatcher
-from typing import List, Any
+
+SERVICE_NAME = u'{packagename}.Service{servicename}'.format(
+    packagename=u'ar.guazuapp.tunnelservice',
+    servicename=u'Tunnelsubscription'
+)
 
 
 class GuazuApp(ScreenManager):
@@ -37,7 +47,7 @@ class GuazuApp(ScreenManager):
         self.dispatcher = Dispatcher()
         self.dispatcher.map("/filter_interface*", self.filter_handler)
         self.client = SimpleUDPClient("127.0.0.1", 8544)  # Create client
-        self.class_update_interface = UpdateInterface()
+        self.class_update_interface = UpdateInterface(self)
 
     def filter_handler(self, address: str,  *args: List[Any]) -> None:
         method = address.split("/")[2]
@@ -45,7 +55,21 @@ class GuazuApp(ScreenManager):
         if method == 'notifications':
             print(method, args)
         if method == 'update_interface':
-            print(method, args)
+            dict_data = ast.literal_eval(args[0])
+            is_callback = dict_data.pop('is_callback')
+            subscription_id = dict_data.pop('subscription_id')
+            id_tk = dict_data.pop('id_tk')
+            if '_serialized' in dict_data:
+                del dict_data['_serialized']
+            obj_message = namedtuple("ObjectName", dict_data.keys())(*dict_data.values())
+
+            self.class_update_interface.update_current(subscription_id=subscription_id,
+                                                       id_tk_encode=id_tk,
+                                                       message_obj=obj_message)
+            if not is_callback:
+                self.class_update_interface.mutate_ticket(model_msgs=obj_message,
+                                                          subscription_id=subscription_id,
+                                                          ticket_id=id_tk)
 
     async def init_main(self):
         logging.info("Star server osc")
@@ -87,13 +111,6 @@ class GuazuApp(ScreenManager):
 
         self.current = 'RegisterScreen'
 
-    def update_interfaces(self, id_tk=None, messages=None, is_callback=False, subscription_id = None):
-        if not is_callback:
-            self.class_update_interface.mutate_ticket(model_msgs=messages, subscription_id= subscription_id, ticket_id=id_tk)
-
-        self.class_update_interface.update_current(subscription_id= subscription_id,
-                                                                  id_tk_encode=id_tk, message_obj=messages)
-
     def playsound(self, effect=None):
         if effect == 'new_message_from_me':
             sound = SoundLoader.load('assets/done-for-you-cut.wav')
@@ -124,7 +141,30 @@ class GuazuApp(ScreenManager):
             wid.add_widget(self.class_screen_messages)
             self.add_widget(wid)
 
+        self.start_service()
         await self.init_main()
+
+    def start_service(self):
+        logging.info("start_service")
+        if platform == 'android':
+            service = autoclass(SERVICE_NAME)
+            self.mActivity = autoclass(u'ar.guazuapp.android.PythonActivity').mActivity
+            argument = ''
+            service.start(self.mActivity, argument)
+            self.service = service
+
+        elif platform in ('linux', 'linux2', 'macos', 'win'):
+            from runpy import run_path
+            from threading import Thread
+            self.service = Thread(
+                target=run_path,
+                args=['service.py'],
+                kwargs={'run_name': '__main__'},
+                daemon=True
+            )
+            self.service.start()
+        else:
+            raise NotImplementedError("service start not implemented on this platform")
 
     async def check_connection(self):
         if not self.checking:

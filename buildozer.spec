@@ -7,7 +7,7 @@ title = GuazuApp
 package.name = GuazuApp
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
+package.domain = ar.guazuapp
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -36,7 +36,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,sqlalchemy,sqlite3,kivy==2.0.0,https://github.com/kivymd/KivyMD/archive/master.zip,pygments,sdl2_ttf==2.0.15,pillow, backoff==1.10.0,plyer==2.0.0,aiohttp==3.7.4, appdirs==1.4.3, async-timeout==3.0.1,attrs==20.3.0,certifi==2019.11.28, chardet==3.0.4,colorama==0.4.3,contextlib2==0.6.0, distlib==0.3.0,distro==1.4.0, docutils==0.17, gql==3.0.0a5, graphql-core==3.1.3, html5lib==1.0.1, idna==2.8,ipaddr==2.2.0,lockfile==0.12.2, msgpack==0.6.2, multidict==4.7.6, packaging==20.3, pep517==0.8.2,progress==1.5, pygments==2.8.1, pyparsing==2.4.6, pytoml==0.1.21, requests==2.25.1,retrying==1.3.3, six==1.14.0, typing-extensions==3.7.4.3,urllib3==1.25.8, webencodings==0.5.1, websockets==8.1, yarl==1.6.3
+requirements = python3,sqlalchemy,jnius,sqlite3,kivy==2.0.0,https://github.com/kivymd/KivyMD/archive/master.zip,pygments,sdl2_ttf==2.0.15,pillow, backoff==1.10.0,plyer==2.0.0,aiohttp==3.7.4, appdirs==1.4.3, async-timeout==3.0.1,attrs==20.3.0,certifi==2019.11.28, chardet==3.0.4,colorama==0.4.3,contextlib2==0.6.0, distlib==0.3.0,distro==1.4.0, docutils==0.17, gql==3.0.0a5, graphql-core==3.1.3, html5lib==1.0.1, idna==2.8,ipaddr==2.2.0,lockfile==0.12.2, msgpack==0.6.2, multidict==4.7.6, packaging==20.3, pep517==0.8.2,progress==1.5, pygments==2.8.1, pyparsing==2.4.6, pytoml==0.1.21, requests==2.25.1,retrying==1.3.3, six==1.14.0, typing-extensions==3.7.4.3,urllib3==1.25.8, webencodings==0.5.1, websockets==8.1, yarl==1.6.3
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -54,11 +54,13 @@ icon.filename = %(source.dir)s/assets/icon.png
 # (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
 # (bool) Indicate if the application should be fullscreen or not
+services = Tunnelsubscription:service.py:background
+
 fullscreen = 0
 # (string) Presplash background color (for new android toolchain)
 android.presplash_color = #FFFFFF
 # (list) Permissions
-android.permissions = INTERNET
+android.permissions = INTERNET,BACKGROUND_SERVICE
 
 # (int) Target Android API, should be as high as possible.
 android.api = 28

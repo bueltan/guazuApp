@@ -23,7 +23,6 @@ class TunnelSubscriptions(object):
     def __init__(self):
         self.sessionSQL = base.Session()
         self.work_queue = asyncio.Queue()
-        self.subscription_id = None
         self.dispatcher = Dispatcher()
         self.dispatcher.map("/filter_service*", self.filter_handler)
         self.account = None
@@ -45,15 +44,15 @@ class TunnelSubscriptions(object):
 
     async def tunnel_subscriptions(self, subscription_id=None, timestamp=0):
         print(f"tunnel_subscriptions {subscription_id} timestamp {timestamp}")
-        self.subscription_id = subscription_id
         logging.info(f"tunnel_subscriptions subscription_id: {subscription_id}, timestamp: {timestamp} ")
 
         query = gql("""subscription($subscription_id: ID! $timestamp:Int!)
         {subscribe_to_tickets(subscription_id: $subscription_id timestamp: $timestamp)}""")
 
-        parameters = {'subscription_id': self.subscription_id, 'timestamp': timestamp}
+        parameters = {'subscription_id': subscription_id, 'timestamp': timestamp}
         function_name = 'tunnel_subscriptions'
-        await self.graphql_connection(query=query, parameters=parameters, function_name=function_name)
+        await self.graphql_connection(query=query, parameters=parameters,
+                                      function_name=function_name, subscription_id=subscription_id)
 
     async def graphql_connection(self, **kwargs):
         logging.info("subscription graphql_connection %s", kwargs)
@@ -76,20 +75,24 @@ class TunnelSubscriptions(object):
                 raise Exception('Not Authorization, waiting validation')
             async with client as session:
                 payload = await self.work_queue.get()
+                subscription_id = payload['subscription_id']
                 logging.info('Tunnel subscribe success payload %s', payload)
                 async for result in session.subscribe(payload['query'], variable_values=payload['parameters']):
                     if payload['function_name'] == 'tunnel_subscriptions':
-                        logging.info(f"tunnel_subscriptions data :{result}")
-                        models = self.build_models(result)
-                        models_tk_msg = self.merge_models_db(models)
+                        models = self.build_models(result, subscription_id)
+                        models_tk_msg = self.merge_models_db(models, subscription_id)
                         if models_tk_msg[2]:
-                            listModel = [i for i in models_tk_msg[i]]
-                            print(type(listModel))
+                            dict_msg = models_tk_msg[1].__dict__.copy()
+                            del dict_msg['_sa_instance_state']
+                            dict_msg['subscription_id'] = subscription_id
+                            dict_msg['id_tk'] = models_tk_msg[0].id
+                            dict_msg['is_callback'] = models_tk_msg[3]
+                            logging.info(f"dict_msg: {dict_msg}")
                             self.client.send_message("/filter_interface/update_interface",
-                                                     [models_tk_msg[0].id])
+                                                     [str(dict_msg)])
 
         except Exception as e:
-            logging.warning(f"WebsocketsTransport: {e}")
+            logging.info(f"WebsocketsTransport: {e}")
             if 'connection closed abnormally [internal]' in str(e):
                 variables.headers.pop('Authorization')
                 logging.warning(e)
@@ -101,8 +104,8 @@ class TunnelSubscriptions(object):
                 await validate_account(password_decode, self.account.id_name)
                 await self.subscribe()
 
-    def update_timestamp_subscription(self, new_timestamp=None):
-        subscription = ModelSubscriptions.query.get(self.subscription_id)
+    def update_timestamp_subscription(self, new_timestamp=None, subscription_id=None):
+        subscription = ModelSubscriptions.query.get(subscription_id)
         try:
             if not subscription:
                 raise Exception('subscription not found')
@@ -128,7 +131,7 @@ class TunnelSubscriptions(object):
         except Exception as e:
             logging.warning(f"update_timestamp_subscription: {e}")
 
-    def build_models(self, result):
+    def build_models(self, result, subscription_id):
         ticket = None
         message = None
         try:
@@ -144,7 +147,7 @@ class TunnelSubscriptions(object):
                 if k in list_keys:
                     tk_dict[k] = v
 
-            tk_dict['subscription_id'] = self.subscription_id
+            tk_dict['subscription_id'] = subscription_id
             msg_dict['id'] = functions.encode('Message:' + str(msg_dict['id']))
             tk_dict['id'] = functions.encode('Tickets:' + str(tk_dict['id']))
             tk_dict['read'] = False
@@ -156,15 +159,17 @@ class TunnelSubscriptions(object):
 
         return ticket, message
 
-    def merge_models_db(self, models):
+    def merge_models_db(self, models, subscription_id):
 
         tickets = models[0]
         messages = models[1]
         new_msg = True
+        is_callback = False
         if tickets and messages:
             try:
                 if messages.user_sent == self.account.id_name:
-                    logging.warning("this message come from me ")
+                    is_callback = True
+                    logging.info("this message come from me ")
                     updated_message = self.replace_message_in_db(old_id=messages.id_bubble, new_id=messages.id)
                     if updated_message is not None:
                         messages = updated_message
@@ -191,13 +196,13 @@ class TunnelSubscriptions(object):
                 new_msg = False
                 logging.error(f'Tunnel subscriptions merge_models_db :{e}')
             finally:
-                self.update_timestamp_subscription(int(time.time()))
-                return tickets, messages, new_msg
+                self.update_timestamp_subscription(int(time.time()), subscription_id)
+                return tickets, messages, new_msg, is_callback
 
     def replace_message_in_db(self, old_id=None, new_id=None):
-        logging.warning(f'replace_message_in_db new_id : {new_id} ')
+        logging.info(f'replace_message_in_db new_id : {new_id} ')
         if new_id:
-            logging.warning(f"replace_message_in_db old_id : {old_id}")
+            logging.info(f"replace_message_in_db old_id : {old_id}")
             temp_message = ModelMessages.query.get(old_id)
         if temp_message is None:
             print("temp_message is None")
@@ -222,7 +227,10 @@ class TunnelSubscriptions(object):
         await self.open_tunnel()  # Enter main loop of program
 
 
+
+
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
+    new_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(new_loop)
     asyncio.ensure_future(TunnelSubscriptions().init_main())
-    loop.run_forever()
+    new_loop.run_forever()
