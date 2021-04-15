@@ -16,6 +16,7 @@ from pythonosc.osc_server import AsyncIOOSCUDPServer
 from pythonosc.dispatcher import Dispatcher
 from validation_account_service import validate_account
 from pythonosc.udp_client import SimpleUDPClient
+from typing import List, Any
 
 
 class TunnelSubscriptions(object):
@@ -29,6 +30,12 @@ class TunnelSubscriptions(object):
         self.client = SimpleUDPClient("127.0.0.1", 8542)  # Create client
         self.client.send_message("/filter_interface/notifications",
                                  ["start service tunnel subscriptions"])  # Send message with int, float and string
+
+    def filter_handler(self, address: str, *args: List[Any]) -> None:
+        method = address.split("/")[2]
+        if method == 'subscribe':
+            logging.info(f"Open tunnel {method}")
+            self.open_tunnel(subscription_id=args[0], timestamp=args[1])
 
     async def open_tunnel(self, subscription_id=None, timestamp=0):
         self.account = self.sessionSQL.query(ModelAccount).filter_by(current=1, keepOpen=True).first()
@@ -73,14 +80,17 @@ class TunnelSubscriptions(object):
         try:
             if not 'Authorization' in variables.headers:
                 raise Exception('Not Authorization, waiting validation')
+
             async with client as session:
                 payload = await self.work_queue.get()
                 subscription_id = payload['subscription_id']
                 logging.info('Tunnel subscribe success payload %s', payload)
+
                 async for result in session.subscribe(payload['query'], variable_values=payload['parameters']):
                     if payload['function_name'] == 'tunnel_subscriptions':
                         models = self.build_models(result, subscription_id)
                         models_tk_msg = self.merge_models_db(models, subscription_id)
+
                         if models_tk_msg[2]:
                             dict_msg = models_tk_msg[1].__dict__.copy()
                             del dict_msg['_sa_instance_state']
@@ -92,15 +102,15 @@ class TunnelSubscriptions(object):
                                                      [str(dict_msg)])
 
         except Exception as e:
-            logging.info(f"WebsocketsTransport: {e}")
+            logging.warning(f"WebsocketsTransport: {e}")
+            password_decode = base64.b85decode(self.account.password).decode("utf-8")
+
             if 'connection closed abnormally [internal]' in str(e):
-                variables.headers.pop('Authorization')
-                logging.warning(e)
-                await self.subscribe()
+                await asyncio.sleep(1)
+                await validate_account(password_decode, self.account.id_name)
+                await self.open_tunnel()
             if 'Not Authorization, waiting validation' in str(e):
                 logging.warning(f"WebsocketsTransport: try again in 1 second")
-                await asyncio.sleep(1)
-                password_decode = base64.b85decode(self.account.password).decode("utf-8")
                 await validate_account(password_decode, self.account.id_name)
                 await self.subscribe()
 
@@ -122,12 +132,9 @@ class TunnelSubscriptions(object):
                         else:
                             logging.info(f"update_timestamp_subscription too much time diff , call sync ")
 
-                            self.client.send_message("/filter_interface/notifications",
-                                                     ["start service tunnel subscriptions"])
+                            self.client.send_message("/filter_interface/sync_tickets",
+                                                     [subscription_id, timestamp_in_db])
 
-                            """
-                            self.main_class.class_sync_data.sync_tickets(id_subscription=self.subscription_id,
-                                                                         timestamp=timestamp_in_db)"""
         except Exception as e:
             logging.warning(f"update_timestamp_subscription: {e}")
 
@@ -216,17 +223,10 @@ class TunnelSubscriptions(object):
         self.sessionSQL.close()
         return new_message
 
-    def filter_handler(self, address, *args):
-        method = address.split("/")[2]
-        if method == 'subscribe':
-            print(method, args)
-
     async def init_main(self):
         server = AsyncIOOSCUDPServer(("127.0.0.1", 8544), self.dispatcher, asyncio.get_event_loop())
         await server.create_serve_endpoint()  # Create datagram endpoint and start serving
         await self.open_tunnel()  # Enter main loop of program
-
-
 
 
 if __name__ == "__main__":

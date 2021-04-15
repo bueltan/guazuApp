@@ -61,7 +61,7 @@ class GuazuApp(ScreenManager):
             id_tk = dict_data.pop('id_tk')
             if '_serialized' in dict_data:
                 del dict_data['_serialized']
-            obj_message = namedtuple("ObjectName", dict_data.keys())(*dict_data.values())
+            obj_message = namedtuple("obj_message", dict_data.keys())(*dict_data.values())
 
             self.class_update_interface.update_current(subscription_id=subscription_id,
                                                        id_tk_encode=id_tk,
@@ -70,11 +70,21 @@ class GuazuApp(ScreenManager):
                 self.class_update_interface.mutate_ticket(model_msgs=obj_message,
                                                           subscription_id=subscription_id,
                                                           ticket_id=id_tk)
+        if method == 'sync_tickets':
+            self.class_sync_data.sync_tickets(id_subscription=args[0], timestamp=args[1])
 
-    async def init_main(self):
+    def open_tunnel_in_service(self, subscription_id, timestamp):
+
+        self.client.send_message("/filter_service/subscribe",
+                                 [subscription_id, timestamp])
+
+    async def server_dispatcher(self):
         logging.info("Star server osc")
-        server = AsyncIOOSCUDPServer(("127.0.0.1", 8542), self.dispatcher, asyncio.get_event_loop())
-        await server.create_serve_endpoint()  # Create datagram endpoint and start serving
+        try:
+            server = AsyncIOOSCUDPServer(("127.0.0.1", 8542), self.dispatcher, asyncio.get_event_loop())
+            await server.create_serve_endpoint()  # Create datagram endpoint and start serving
+        except Exception as e:
+            logging.error(e)
 
     def hook_keyboard(self, window, key, *largs):
         if key == 27:
@@ -142,29 +152,32 @@ class GuazuApp(ScreenManager):
             self.add_widget(wid)
 
         self.start_service()
-        await self.init_main()
+        await self.server_dispatcher()
 
     def start_service(self):
         logging.info("start_service")
-        if platform == 'android':
-            service = autoclass(SERVICE_NAME)
-            self.mActivity = autoclass(u'ar.guazuapp.android.PythonActivity').mActivity
-            argument = ''
-            service.start(self.mActivity, argument)
-            self.service = service
+        try :
+            if platform == 'android':
+                service = autoclass(SERVICE_NAME)
+                self.mActivity = autoclass(u'ar.guazuapp.android.PythonActivity').mActivity
+                argument = ''
+                service.start(self.mActivity, argument)
+                self.service = service
 
-        elif platform in ('linux', 'linux2', 'macos', 'win'):
-            from runpy import run_path
-            from threading import Thread
-            self.service = Thread(
-                target=run_path,
-                args=['service.py'],
-                kwargs={'run_name': '__main__'},
-                daemon=True
-            )
-            self.service.start()
-        else:
-            raise NotImplementedError("service start not implemented on this platform")
+            elif platform in ('linux', 'linux2', 'macos', 'win'):
+                from runpy import run_path
+                from threading import Thread
+                self.service = Thread(
+                    target=run_path,
+                    args=['service.py'],
+                    kwargs={'run_name': '__main__'},
+                    daemon=True
+                )
+                self.service.start()
+            else:
+                raise NotImplementedError("service start not implemented on this platform")
+        except Exception as e:
+            logging.warning(e)
 
     async def check_connection(self):
         if not self.checking:

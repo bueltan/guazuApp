@@ -54,7 +54,8 @@ class SyncSubscriptions(object):
                     self.model_sub = subs_from_sever
                     self.session.commit()
                     self.create_subscription_interfaces()
-                    await self.main_class.open_tunnel(subscription_id=subs_from_sever.id, timestamp= 0)
+                    self.main_class.open_tunnel_in_service(subscription_id=subs_from_sever.id, timestamp= 0)
+
                 list_object_subscription.append(self.model_sub)
             logging.info(" LIST OBJECT SUBSCRIPTIONS %s", list_object_subscription)
 

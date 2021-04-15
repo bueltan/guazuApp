@@ -32,6 +32,11 @@ class MessagesScreen(MDBoxLayout):
         self.class_new_message = None
         self.id_tk_encode = None
         self.text_message.bind(text=self.save_in_temp_tablet)
+        self.size_text = 30
+        self.size_meta_text = int(self.size_text - self.size_text / 2)
+
+        self.size_text = str(self.size_text)
+        self.size_meta_text = str(self.size_meta_text)
 
     def set_ticket(self, **kwargs):
         self.id_tk_encode = kwargs.get('id_tk')
@@ -94,7 +99,9 @@ class MessagesScreen(MDBoxLayout):
                         emiter = data_obj.user_sent
 
                     dict_messages[
-                        'text'] = "[size=25]" + data_obj.text + "[/size]" + "[size=14][i][color=" + color_text + "]" \
+                        'text'] = "[size=" + self.size_text + "]" + \
+                                  data_obj.text + "[/size]" + \
+                                  "[size=" + self.size_meta_text + "][i][color=" + color_text + "]" \
                                   + '    ' + icon + ' ~' + emiter + ' ' + \
                                   str_time + "[/color][/i][/size]"
 
